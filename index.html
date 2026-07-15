@@ -1,0 +1,894 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BODA Nutrition — Your kitchen, your coach, your plan</title>
+<meta name="description" content="BODA is the nutrition app with an AI chef, real registered dietitians, effortless food logging, and adaptive workouts.">
+<style>
+  :root{
+    --navy:#000031;
+    --navy-deep:#000016;
+    --coral:#FF7D66;
+    --coral-dark:#993C1D;
+    --cream:#FEFEF2;
+    --blue:#378ADD;
+    --peach:#FFE6D9;
+    --muted:#B5B5BF;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{font-family:Inter,-apple-system,BlinkMacSystemFont,Helvetica,Arial,sans-serif;background:var(--cream);color:var(--navy);line-height:1.6;overflow-x:hidden}
+  a{color:inherit;text-decoration:none}
+  .wrap{max-width:1100px;margin:0 auto;padding:0 24px}
+
+  /* ---------- Reveal on scroll ---------- */
+  .reveal{opacity:0;transform:translateY(34px);transition:opacity .8s cubic-bezier(.2,.7,.2,1),transform .8s cubic-bezier(.2,.7,.2,1)}
+  .reveal.in{opacity:1;transform:none}
+  .d1{transition-delay:.08s}.d2{transition-delay:.16s}.d3{transition-delay:.24s}.d4{transition-delay:.32s}
+  @media(prefers-reduced-motion:reduce){.reveal{opacity:1;transform:none;transition:none}}
+
+  /* ---------- Nav ---------- */
+  nav{position:fixed;top:0;left:0;right:0;z-index:100;background:rgba(254,254,242,.6);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border-bottom:1px solid transparent;transition:background .4s,border-color .4s,box-shadow .4s}
+  nav.scrolled{background:rgba(254,254,242,.88);border-bottom-color:#e9e9ee;box-shadow:0 4px 30px rgba(0,0,49,.06)}
+  .nav-inner{display:flex;align-items:center;justify-content:space-between;height:64px}
+  .logo{font-weight:800;font-size:22px;letter-spacing:.5px}
+  .logo span{color:var(--coral)}
+  .nav-links{display:flex;gap:28px;font-size:14px;font-weight:500}
+  .nav-links a{position:relative}
+  .nav-links a::after{content:"";position:absolute;left:0;bottom:-4px;width:0;height:2px;background:var(--coral);transition:width .3s}
+  .nav-links a:hover::after{width:100%}
+  .btn{display:inline-block;background:var(--coral);color:#fff;font-weight:600;padding:12px 26px;border-radius:999px;font-size:15px;transition:transform .2s cubic-bezier(.2,.7,.2,1),box-shadow .2s}
+  .btn:hover{transform:translateY(-3px) scale(1.02);box-shadow:0 12px 28px rgba(255,125,102,.4)}
+  .btn:active{transform:translateY(-1px) scale(.99)}
+  .btn.small{padding:8px 18px;font-size:13px}
+  .btn.ghost{background:transparent;color:var(--navy);border:2px solid var(--navy)}
+  .btn.ghost:hover{box-shadow:0 12px 28px rgba(0,0,49,.15)}
+
+  /* ---------- Hero ---------- */
+  header{background:var(--navy);color:var(--cream);overflow:hidden;position:relative;min-height:100vh;display:flex;align-items:center}
+  .glow{position:absolute;border-radius:50%;filter:blur(90px);opacity:.5;pointer-events:none}
+  .glow.g1{width:520px;height:520px;background:var(--coral);top:-160px;right:-120px;animation:drift1 14s ease-in-out infinite alternate}
+  .glow.g2{width:420px;height:420px;background:var(--blue);bottom:-180px;left:-140px;opacity:.35;animation:drift2 18s ease-in-out infinite alternate}
+  .glow.g3{width:280px;height:280px;background:var(--coral-dark);top:40%;left:38%;opacity:.25;animation:drift1 22s ease-in-out infinite alternate-reverse}
+  @keyframes drift1{from{transform:translate(0,0) scale(1)}to{transform:translate(-60px,50px) scale(1.15)}}
+  @keyframes drift2{from{transform:translate(0,0) scale(1)}to{transform:translate(70px,-40px) scale(1.1)}}
+  .hero{display:grid;grid-template-columns:1.1fr .9fr;gap:48px;align-items:center;padding:130px 0 90px;position:relative;z-index:2;width:100%}
+  .hero h1{font-size:clamp(38px,5.8vw,64px);line-height:1.06;font-weight:800;letter-spacing:-1.5px}
+  .hero h1 .w{display:inline-block;opacity:0;transform:translateY(30px);animation:wordUp .8s cubic-bezier(.2,.7,.2,1) forwards}
+  .hero h1 .w:nth-child(1){animation-delay:.05s}.hero h1 .w:nth-child(2){animation-delay:.13s}.hero h1 .w:nth-child(3){animation-delay:.21s}.hero h1 .w:nth-child(4){animation-delay:.29s}.hero h1 .w:nth-child(5){animation-delay:.37s}
+  @keyframes wordUp{to{opacity:1;transform:none}}
+  .hero h1 em{color:var(--coral);font-style:normal}
+  .hero p.sub{margin-top:22px;font-size:18px;color:var(--muted);max-width:480px;opacity:0;animation:wordUp .8s .5s cubic-bezier(.2,.7,.2,1) forwards}
+  .hero .cta-row{margin-top:34px;display:flex;gap:14px;flex-wrap:wrap;opacity:0;animation:wordUp .8s .65s cubic-bezier(.2,.7,.2,1) forwards}
+  .hero .cta-row .ghost{color:var(--cream);border-color:var(--cream)}
+  .pill{display:inline-block;background:rgba(255,125,102,.15);color:var(--coral);font-size:13px;font-weight:600;padding:6px 14px;border-radius:999px;margin-bottom:22px;opacity:0;animation:wordUp .8s cubic-bezier(.2,.7,.2,1) forwards}
+  .scroll-hint{position:absolute;bottom:26px;left:50%;transform:translateX(-50%);font-size:11px;letter-spacing:2px;color:var(--muted);text-transform:uppercase;animation:hintFloat 2.2s ease-in-out infinite}
+  @keyframes hintFloat{0%,100%{transform:translateX(-50%) translateY(0)}50%{transform:translateX(-50%) translateY(8px)}}
+
+  /* hero phone — 3D tilt + float */
+  .hero-phone-wrap{perspective:1200px}
+  .hero-phone{transition:transform .25s ease-out;transform-style:preserve-3d;animation:phoneFloat 6s ease-in-out infinite}
+  @keyframes phoneFloat{0%,100%{translate:0 0}50%{translate:0 -14px}}
+
+  /* ---------- Phone frame ---------- */
+  .phone{width:290px;background:var(--cream);border-radius:40px;border:8px solid var(--navy-deep);box-shadow:0 40px 80px rgba(0,0,0,.5);margin:0 auto;overflow:hidden;color:var(--navy);display:flex;flex-direction:column}
+  .phone svg{display:block;width:100%;height:auto}
+  .phone.dark{background:var(--navy)}
+  .sb{display:flex;justify-content:space-between;padding:10px 20px 2px;font-size:10px;font-weight:700}
+  .phone .screen{padding:10px 16px 16px;flex:1}
+  .ph-title{font-size:19px;font-weight:800;letter-spacing:-.3px}
+  .ph-link{font-size:11px;color:var(--coral);font-weight:600}
+  .tabbar{display:flex;justify-content:space-around;align-items:flex-end;background:#fff;border-top:1px solid #eee;padding:8px 4px 12px;font-size:8.5px;color:#bbb;text-align:center;position:relative}
+  .phone.dark .tabbar{background:var(--navy-deep);border-top-color:#111142;color:#55557a}
+  .tabbar>div{flex:1}
+  .tabbar .active{color:var(--coral);font-weight:700}
+  .tabbar div span{display:block;font-size:14px}
+  .tabbar .fabc{width:46px;height:46px;border-radius:50%;background:var(--coral);color:#fff;display:flex;align-items:center;justify-content:center;font-size:9.5px;font-weight:800;margin:-26px auto 0;box-shadow:0 6px 14px rgba(255,125,102,.45)}
+  .wcard{background:#fff;border-radius:16px;padding:12px 14px;box-shadow:0 2px 8px rgba(0,0,49,.06)}
+  .slab{font-size:9px;font-weight:800;letter-spacing:1.2px;text-transform:uppercase;color:var(--coral-dark);margin:12px 2px 6px}
+  .thumb{width:34px;height:34px;border-radius:10px;flex-shrink:0}
+
+  /* Journal screen */
+  .intake{background:var(--navy);color:var(--cream);border-radius:18px;padding:14px;margin-top:10px;display:flex;justify-content:space-between;gap:10px}
+  .intake .lab{font-size:8px;letter-spacing:1.5px;color:var(--coral);font-weight:800}
+  .intake .big{font-size:22px;font-weight:800;margin-top:2px}
+  .intake .big small{font-size:11px;color:var(--muted);font-weight:500}
+  .intake .mlabels{display:flex;gap:14px;margin-top:10px}
+  .intake .ml{font-size:7px;letter-spacing:1px;color:var(--muted)}
+  .intake .ml .b{width:44px;height:5px;background:#1a1a55;border-radius:99px;margin-top:3px;overflow:hidden}
+  .intake .ml .b i{display:block;height:100%;background:var(--coral);border-radius:99px}
+  .intake .grams{font-size:8px;color:var(--muted);margin-top:5px}
+  .ring60{width:52px;height:52px;border-radius:50%;background:conic-gradient(var(--coral) 0 60%,#1a1a55 60% 100%);display:flex;align-items:center;justify-content:center;flex-shrink:0;align-self:center}
+  .ring60 .in{width:38px;height:38px;border-radius:50%;background:var(--navy);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;color:#fff}
+  .duo{display:flex;gap:8px;margin-top:10px}
+  .duo .wcard{flex:1;padding:10px 12px}
+  .duo .k{font-size:8px;letter-spacing:1px;font-weight:800}
+  .duo .v{font-size:15px;font-weight:800;margin-top:2px}
+  .duo .v small{font-size:9px;color:#999;font-weight:500}
+  .meal{display:flex;gap:10px;align-items:center;margin-bottom:8px}
+  .meal .t{font-size:11.5px;font-weight:700}
+  .meal .s{font-size:9.5px;color:#999}
+  .dashed{border:1.5px dashed #d8d5c5;border-radius:16px;padding:13px;text-align:center;font-size:11px;color:#999}
+  .searchrow{display:flex;gap:8px;margin-top:12px;align-items:center}
+  .searchrow .inp{flex:1;background:#fff;border-radius:99px;padding:10px 14px;font-size:10.5px;color:#999;box-shadow:0 2px 8px rgba(0,0,49,.06)}
+  .sq{width:34px;height:34px;border-radius:11px;flex-shrink:0}
+
+  /* Chat screen */
+  .chat{display:flex;flex-direction:column;gap:8px;margin-top:12px}
+  .bubble{max-width:84%;padding:9px 12px;border-radius:16px;font-size:11px;line-height:1.45}
+  .bubble.me{align-self:flex-end;background:var(--coral);color:#fff;border-bottom-right-radius:4px}
+  .bubble.ai{align-self:flex-start;background:#fff;box-shadow:0 2px 8px rgba(0,0,49,.06);border-bottom-left-radius:4px}
+  .bubble.ai .logged{display:block;margin-top:6px;background:var(--peach);color:var(--coral-dark);font-weight:700;font-size:10px;padding:5px 8px;border-radius:8px}
+  .chat-input{margin-top:12px;background:#fff;border-radius:99px;padding:9px 14px;font-size:10.5px;color:#999;display:flex;justify-content:space-between;align-items:center;box-shadow:0 2px 8px rgba(0,0,49,.06)}
+
+  /* Meal planner screen */
+  .toggle{display:flex;background:#F0EEE2;border-radius:99px;padding:3px;margin-top:10px;font-size:10.5px;font-weight:700;text-align:center}
+  .toggle div{flex:1;padding:7px 0;border-radius:99px;color:#999}
+  .toggle .on{background:var(--navy);color:#fff}
+  .kitchen{background:var(--peach);border-radius:16px;padding:12px 14px;margin-top:10px;display:flex;justify-content:space-between;align-items:center}
+  .kitchen .est{font-size:7.5px;letter-spacing:1.5px;color:var(--coral-dark);font-weight:800}
+  .kitchen .nm{font-size:15px;font-weight:800}
+  .chefpill{background:#fff;border-radius:99px;padding:5px 10px;display:flex;align-items:center;gap:6px;font-size:9px}
+  .chefpill .r{width:16px;height:16px;border-radius:50%;background:#C9A227;color:#fff;font-size:8px;font-weight:800;display:flex;align-items:center;justify-content:center}
+  .chefpill b{display:block;font-size:9.5px}
+  .statduo .k{color:var(--coral-dark)}
+  .statduo .gbar{height:5px;border-radius:99px;background:#F0EEE2;margin-top:6px;overflow:hidden}
+  .statduo .gbar i{display:block;height:100%;border-radius:99px}
+  .statduo .note{font-size:8px;margin-top:3px}
+  .prep{display:flex;gap:8px;margin-top:6px}
+  .prep .p{flex:1;border-radius:14px;padding:10px 11px}
+  .prep .p .tt{font-size:10.5px;font-weight:800}
+  .prep .p .ss{font-size:8.5px;margin-top:8px;opacity:.75}
+  .prep .p .ii{font-size:9.5px;font-weight:600;margin-top:1px}
+  .mealrow{background:#fff;border-radius:14px;padding:10px 12px;margin-bottom:7px;display:flex;align-items:center;gap:10px;box-shadow:0 2px 8px rgba(0,0,49,.05)}
+  .mealrow .lab{font-size:7.5px;letter-spacing:1px;color:#999;font-weight:800}
+  .mealrow .tt{font-size:11px;font-weight:700}
+  .mealrow .chip{display:inline-block;background:#E7F7EA;color:#1FA55A;font-size:8px;font-weight:700;padding:2px 7px;border-radius:99px;margin-top:4px}
+  .mealrow .cal{margin-left:auto;font-size:10px;color:#999;text-align:right;flex-shrink:0}
+  .askchef{background:var(--navy);color:#fff;border-radius:99px;padding:10px 14px;font-size:10.5px;display:flex;align-items:center;gap:8px;margin-top:8px}
+  .askchef .r{width:20px;height:20px;border-radius:50%;background:#C9A227;font-size:9px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+
+  /* Grocery screen */
+  .gcount{font-size:10px;color:#999;margin-top:6px}
+  .addrow{display:flex;gap:8px;margin-top:10px;align-items:center}
+  .addrow .inp{flex:1;background:#fff;border-radius:12px;padding:10px 14px;font-size:10.5px;color:#999;box-shadow:0 2px 8px rgba(0,0,49,.06)}
+  .gitem{background:#fff;border-radius:12px;padding:9px 12px;margin-bottom:6px;display:flex;align-items:center;gap:10px;font-size:11.5px;box-shadow:0 2px 8px rgba(0,0,49,.05)}
+  .gitem .box{width:16px;height:16px;border-radius:5px;border:2px solid #ddd;flex-shrink:0}
+  .gitem.done .box{background:var(--coral);border-color:var(--coral);position:relative}
+  .gitem.done .box::after{content:"✓";color:#fff;font-size:10px;position:absolute;top:-3px;left:2px}
+  .gitem.done span:not(.qty){color:#aaa;text-decoration:line-through}
+  .gitem .qty{margin-left:auto;color:#999;font-size:10px}
+  .navybtn{background:var(--navy);color:#fff;text-align:center;font-size:11.5px;font-weight:700;border-radius:99px;padding:11px;margin-top:10px}
+
+  /* Move screen */
+  .phone.dark .screen{color:var(--cream)}
+  .weekstrip{display:flex;gap:5px;margin-top:12px}
+  .weekstrip .d{flex:1;background:#0a0a45;border-radius:10px;text-align:center;padding:7px 0;font-size:9px;color:var(--muted)}
+  .weekstrip .d b{display:block;font-size:11px;color:var(--cream)}
+  .weekstrip .d.today{background:var(--coral);color:#fff}
+  .weekstrip .d.today b{color:#fff}
+  .workout{background:var(--cream);color:var(--navy);border-radius:18px;padding:14px;margin-top:12px}
+  .workout .lab{font-size:8px;letter-spacing:1.5px;color:var(--coral-dark);font-weight:800}
+  .workout .tt{font-size:16px;font-weight:800;margin-top:2px}
+  .workout .ss{font-size:9.5px;color:#888}
+  .workout .chips{display:flex;gap:6px;margin-top:8px}
+  .workout .chips span{background:var(--peach);color:var(--coral-dark);font-size:8.5px;font-weight:700;padding:4px 9px;border-radius:99px}
+  .workout .start{background:var(--navy);color:#fff;text-align:center;border-radius:99px;padding:9px;font-size:11px;font-weight:700;margin-top:12px}
+  .streak{background:#0a0a45;border-radius:16px;padding:12px 14px;margin-top:10px}
+  .streak .top{display:flex;justify-content:space-between;font-size:8.5px;letter-spacing:1px;color:var(--muted);font-weight:800}
+  .streak .top b{color:var(--coral)}
+  .streak .n{font-size:18px;font-weight:800;color:var(--cream)}
+  .streak .n small{font-size:10px;color:var(--muted);font-weight:500}
+  .streak .bar{height:6px;background:#1a1a55;border-radius:99px;margin-top:8px;overflow:hidden}
+  .streak .bar i{display:block;height:100%;width:70%;background:var(--coral);border-radius:99px}
+  .lb{margin-top:10px}
+  .lb .row{display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:10px;font-size:10.5px;color:var(--cream)}
+  .lb .row.you{background:#1a1a55}
+  .lb .rk{width:12px;color:var(--muted);font-weight:700}
+  .lb .row.you .rk{color:var(--coral)}
+  .lb .av2{width:20px;height:20px;border-radius:50%;background:#26265e;font-size:8px;font-weight:800;display:flex;align-items:center;justify-content:center}
+  .lb .w{margin-left:auto;font-weight:700;font-size:10px}
+
+  /* ---------- Scrollytelling (Apple-style pinned) ---------- */
+  .scrolly-track{position:relative;height:480vh;background:linear-gradient(180deg,var(--cream) 0%,#F5F2E6 50%,var(--cream) 100%)}
+  .scrolly-stage{position:sticky;top:0;height:100vh;display:flex;align-items:center;overflow:hidden}
+  .scrolly-grid{display:grid;grid-template-columns:1fr auto;gap:70px;align-items:center;width:100%}
+  .steps-col{position:relative;min-height:380px}
+  .stepx{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:center;opacity:0;transform:translateY(40px);transition:opacity .6s cubic-bezier(.2,.7,.2,1),transform .6s cubic-bezier(.2,.7,.2,1);pointer-events:none}
+  .stepx.on{opacity:1;transform:none;pointer-events:auto}
+  .phones-col{position:relative;width:290px;height:640px;perspective:1000px}
+  .phones-col .pslot{position:absolute;inset:0;display:flex;align-items:center;opacity:0;transform:translateY(60px) scale(.9) rotateY(8deg);transition:opacity .7s cubic-bezier(.2,.7,.2,1),transform .7s cubic-bezier(.2,.7,.2,1)}
+  .phones-col .pslot.on{opacity:1;transform:none}
+  .phones-col .phone{box-shadow:0 30px 70px rgba(0,0,49,.28)}
+  .dots{position:absolute;right:-46px;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:10px}
+  .dots i{width:8px;height:8px;border-radius:50%;background:#d8d5c5;transition:background .3s,transform .3s}
+  .dots i.on{background:var(--coral);transform:scale(1.4)}
+  .checks{list-style:none;margin-top:22px}
+  .checks li{padding:6px 0 6px 30px;position:relative;font-size:15.5px}
+  .checks li::before{content:"✓";position:absolute;left:0;color:var(--coral);font-weight:800}
+
+  /* ---------- Sections ---------- */
+  section{padding:100px 0}
+  .kicker{color:var(--coral);font-weight:700;font-size:14px;text-transform:uppercase;letter-spacing:1.5px}
+  h2{font-size:clamp(28px,4vw,42px);font-weight:800;letter-spacing:-.5px;margin-top:10px}
+  .lede{margin-top:14px;font-size:17px;color:#555;max-width:640px}
+
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:24px;margin-top:48px}
+  .feature{background:#fff;border-radius:24px;padding:34px 30px;box-shadow:0 4px 24px rgba(0,0,49,.06);transition:transform .35s cubic-bezier(.2,.7,.2,1),box-shadow .35s}
+  .feature:hover{transform:translateY(-8px);box-shadow:0 20px 44px rgba(0,0,49,.12)}
+  .feature .icon{width:52px;height:52px;border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:24px;margin-bottom:18px}
+  .feature h3{font-size:20px;font-weight:700}
+  .feature p{margin-top:10px;font-size:15px;color:#555}
+  .feature ul{margin:14px 0 0 0;list-style:none}
+  .feature ul li{font-size:14px;color:#444;padding:5px 0 5px 26px;position:relative}
+  .feature ul li::before{content:"✓";position:absolute;left:0;color:var(--coral);font-weight:700}
+  .bg-coral{background:var(--peach)}
+  .bg-blue{background:#E3F0FC}
+  .bg-navy{background:#E7E7EF}
+
+  .steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:24px;margin-top:48px}
+  .step{text-align:center;padding:0 12px}
+  .step .n{width:56px;height:56px;border-radius:50%;background:var(--navy);color:var(--cream);font-weight:800;font-size:20px;display:flex;align-items:center;justify-content:center;margin:0 auto 16px}
+  .step h3{font-size:17px;font-weight:700}
+  .step p{font-size:14px;color:#555;margin-top:8px}
+
+  .band{background:var(--navy);color:var(--cream);position:relative;overflow:hidden}
+  .band .lede{color:var(--muted)}
+  .band .feature{background:#0a0a45;box-shadow:none}
+  .band .feature h3{color:var(--cream)}
+  .band .feature p,.band .feature ul li{color:var(--muted)}
+  .band .glow{opacity:.3}
+
+  .split{display:grid;grid-template-columns:1fr auto;gap:64px;align-items:center;margin-top:24px}
+  .split.rev{grid-template-columns:auto 1fr}
+  .split .phone{margin:0;box-shadow:0 24px 50px rgba(0,0,49,.22)}
+
+  .tiers{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:24px;margin-top:48px;align-items:stretch}
+  .tier{background:#fff;border-radius:24px;padding:36px 30px;box-shadow:0 4px 24px rgba(0,0,49,.06);display:flex;flex-direction:column;position:relative;transition:transform .35s cubic-bezier(.2,.7,.2,1),box-shadow .35s}
+  .tier:hover{transform:translateY(-8px);box-shadow:0 24px 50px rgba(0,0,49,.14)}
+  .tier.hot{border:3px solid var(--coral);transform:scale(1.02)}
+  .tier.hot:hover{transform:scale(1.02) translateY(-8px)}
+  .tier .badge{position:absolute;top:-14px;left:50%;transform:translateX(-50%);background:var(--coral);color:#fff;font-size:12px;font-weight:700;padding:5px 16px;border-radius:99px;white-space:nowrap}
+  .tier h3{font-size:22px;font-weight:800}
+  .tier .who{font-size:13.5px;color:#888;margin-top:4px}
+  .tier .price{margin-top:18px;font-size:38px;font-weight:800;letter-spacing:-1px}
+  .tier .price small{font-size:15px;font-weight:500;color:#888}
+  .tier .alt{font-size:13px;color:var(--coral-dark);font-weight:600;margin-top:2px}
+  .tier ul{list-style:none;margin:22px 0 28px;flex:1}
+  .tier ul li{font-size:14.5px;padding:7px 0 7px 28px;position:relative;color:#333}
+  .tier ul li::before{content:"✓";position:absolute;left:0;color:var(--coral);font-weight:700}
+  .tier .btn{text-align:center}
+
+  .cta-final{background:linear-gradient(135deg,var(--coral),var(--coral-dark));color:#fff;text-align:center;border-radius:32px;padding:80px 30px;margin:0 0 100px;position:relative;overflow:hidden}
+  .cta-final::before{content:"";position:absolute;width:400px;height:400px;border-radius:50%;background:rgba(255,255,255,.12);top:-200px;right:-100px;animation:drift1 12s ease-in-out infinite alternate}
+  .cta-final h2{color:#fff;position:relative}
+  .cta-final p{margin-top:14px;font-size:17px;opacity:.9;position:relative}
+  .cta-final .btn{background:#fff;color:var(--coral-dark);margin-top:30px;position:relative}
+
+  footer{background:var(--navy-deep);color:var(--muted);padding:40px 0;font-size:13.5px}
+  .foot{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:16px}
+  footer .logo{color:var(--cream);font-size:18px}
+
+  @media(max-width:900px){
+    .hero{grid-template-columns:1fr;text-align:center;padding:110px 0 80px}
+    .hero p.sub{margin-left:auto;margin-right:auto}
+    .hero .cta-row{justify-content:center}
+    .nav-links{display:none}
+    .tier.hot{transform:none}
+    .split,.split.rev{grid-template-columns:1fr;justify-items:center;gap:40px}
+    .scrolly-grid{grid-template-columns:1fr;gap:24px;justify-items:center}
+    .steps-col{min-height:260px;width:100%;text-align:center;order:2}
+    .stepx{align-items:center}
+    .stepx .checks{text-align:left}
+    .phones-col{order:1;width:240px;height:520px}
+    .phones-col .phone{width:240px}
+    .dots{display:none}
+    h2{font-size:clamp(26px,7vw,34px)}
+  }
+</style>
+</head>
+<body>
+
+<nav id="nav">
+  <div class="wrap nav-inner">
+    <a class="logo" href="#"><img src="data:image/png;base64,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" alt="BODA" style="height:26px;display:block"></a>
+    <div class="nav-links">
+      <a href="#features">Features</a>
+      <a href="#story">The App</a>
+      <a href="#menu">AI Chef</a>
+      <a href="#move">Move</a>
+      <a href="#pricing">Pricing</a>
+    </div>
+    <a class="btn small" href="#pricing">Get BODA</a>
+  </div>
+</nav>
+
+<header>
+  <div class="glow g1"></div><div class="glow g2"></div><div class="glow g3"></div>
+  <div class="wrap hero">
+    <div>
+      <span class="pill">Nutrition · AI Chef · Real Dietitians · Workouts</span>
+      <h1><span class="w">Eat</span> <span class="w">better</span> <span class="w">without</span> <span class="w"><em>thinking</em></span> <span class="w"><em>harder.</em></span></h1>
+      <p class="sub">BODA plans your meals, builds your grocery list, tracks your macros, adapts your workouts — and puts a real registered dietitian in your corner when you want one.</p>
+      <div class="cta-row">
+        <a class="btn" href="#pricing">Start free</a>
+        <a class="btn ghost" href="#story">See what it does</a>
+      </div>
+    </div>
+
+    <!-- HOME screen — the actual design mockup (BODA_01_Home.svg), embedded verbatim -->
+    <div class="hero-phone-wrap">
+      <div class="hero-phone" id="heroPhone">
+        <div class="phone">
+          <svg width="390" height="844" viewBox="0 0 390 844" xmlns="http://www.w3.org/2000/svg" font-family="Inter, -apple-system, Helvetica, Arial, sans-serif">
+            <rect width="390" height="844" fill="#FEFEF2"/>
+            <text x="28" y="34" font-size="14" font-weight="600" fill="#000031">9:41</text>
+            <text x="362" y="34" font-size="13" fill="#000031" text-anchor="end">5G  100%</text>
+            <text x="24" y="86" font-size="13" fill="#8A8A99">Tuesday, June 24</text>
+            <text x="24" y="112" font-size="24" font-weight="600" fill="#000031">Good morning, Charlie</text>
+            <circle cx="354" cy="92" r="20" fill="#FFE6D9"/>
+            <text x="354" y="97" font-size="14" font-weight="600" fill="#993C1D" text-anchor="middle">C</text>
+            <rect x="20" y="136" width="350" height="196" rx="20" fill="#FFFFFF" stroke="#ECEAE0"/>
+            <circle cx="108" cy="234" r="58" fill="none" stroke="#F1EFE8" stroke-width="12"/>
+            <circle cx="108" cy="234" r="58" fill="none" stroke="#FF7D66" stroke-width="12" stroke-linecap="round" stroke-dasharray="240 365" transform="rotate(-90 108 234)"/>
+            <text x="108" y="230" font-size="28" font-weight="600" fill="#000031" text-anchor="middle">1,420</text>
+            <text x="108" y="250" font-size="12" fill="#8A8A99" text-anchor="middle">of 2,100 kcal</text>
+            <text x="196" y="190" font-size="13" fill="#8A8A99">Protein</text>
+            <text x="350" y="190" font-size="13" font-weight="600" fill="#000031" text-anchor="end">96 / 145 g</text>
+            <rect x="196" y="198" width="154" height="7" rx="3.5" fill="#F1EFE8"/>
+            <rect x="196" y="198" width="102" height="7" rx="3.5" fill="#000031"/>
+            <text x="196" y="232" font-size="13" fill="#8A8A99">Carbs</text>
+            <text x="350" y="232" font-size="13" font-weight="600" fill="#000031" text-anchor="end">150 / 220 g</text>
+            <rect x="196" y="240" width="154" height="7" rx="3.5" fill="#F1EFE8"/>
+            <rect x="196" y="240" width="105" height="7" rx="3.5" fill="#378ADD"/>
+            <text x="196" y="274" font-size="13" fill="#8A8A99">Fat</text>
+            <text x="350" y="274" font-size="13" font-weight="600" fill="#000031" text-anchor="end">38 / 60 g</text>
+            <rect x="196" y="282" width="154" height="7" rx="3.5" fill="#F1EFE8"/>
+            <rect x="196" y="282" width="98" height="7" rx="3.5" fill="#FF7D66"/>
+            <text x="196" y="316" font-size="12" fill="#1D9E75" font-weight="600">On track for today</text>
+            <text x="24" y="368" font-size="16" font-weight="600" fill="#000031">Quick add</text>
+            <rect x="20" y="382" width="110" height="84" rx="16" fill="#FFFFFF" stroke="#ECEAE0"/>
+            <circle cx="75" cy="416" r="16" fill="#FFE9E3"/>
+            <text x="75" y="421" font-size="16" fill="#FF7D66" text-anchor="middle">+</text>
+            <text x="75" y="452" font-size="13" fill="#000031" text-anchor="middle">Log food</text>
+            <rect x="140" y="382" width="110" height="84" rx="16" fill="#FFFFFF" stroke="#ECEAE0"/>
+            <rect x="183" y="402" width="24" height="20" rx="4" fill="none" stroke="#000031" stroke-width="2"/>
+            <text x="195" y="452" font-size="13" fill="#000031" text-anchor="middle">Scan</text>
+            <rect x="260" y="382" width="110" height="84" rx="16" fill="#FFFFFF" stroke="#ECEAE0"/>
+            <circle cx="315" cy="416" r="16" fill="#FF7D66"/>
+            <text x="315" y="452" font-size="13" fill="#000031" text-anchor="middle">Ask coach</text>
+            <rect x="20" y="486" width="350" height="76" rx="18" fill="#FFFFFF" stroke="#ECEAE0"/>
+            <text x="40" y="518" font-size="15" font-weight="600" fill="#000031">Water</text>
+            <text x="40" y="540" font-size="13" fill="#8A8A99">5 of 8 glasses</text>
+            <rect x="190" y="514" width="160" height="10" rx="5" fill="#EAF3FB"/>
+            <rect x="190" y="514" width="100" height="10" rx="5" fill="#4A9FE8"/>
+            <text x="350" y="544" font-size="12" fill="#4A9FE8" text-anchor="end" font-weight="600">+ glass</text>
+            <rect x="20" y="582" width="350" height="92" rx="18" fill="#FFE6D9"/>
+            <circle cx="58" cy="628" r="22" fill="#FFFFFF"/>
+            <text x="58" y="633" font-size="15" font-weight="600" fill="#993C1D" text-anchor="middle">S</text>
+            <text x="92" y="618" font-size="14" font-weight="600" fill="#000031">Sarah, your dietitian</text>
+            <text x="92" y="640" font-size="12.5" fill="#993C1D">"Great protein day - keep it up!"</text>
+            <text x="92" y="660" font-size="12.5" fill="#8A8A99">Tap to message</text>
+            <rect x="0" y="772" width="390" height="72" fill="#FFFFFF"/>
+            <line x1="0" y1="772" x2="390" y2="772" stroke="#ECEAE0"/>
+            <text x="55" y="810" font-size="22" fill="#000031" text-anchor="middle">&#8962;</text>
+            <text x="55" y="830" font-size="10" fill="#000031" text-anchor="middle">Home</text>
+            <text x="140" y="810" font-size="20" fill="#B5B5BF" text-anchor="middle">&#9645;</text>
+            <text x="140" y="830" font-size="10" fill="#B5B5BF" text-anchor="middle">Journal</text>
+            <circle cx="195" cy="800" r="24" fill="#FF7D66"/>
+            <text x="195" y="804" font-size="11" fill="#FEFEF2" text-anchor="middle">Coach</text>
+            <text x="250" y="810" font-size="20" fill="#B5B5BF" text-anchor="middle">&#9638;</text>
+            <text x="250" y="830" font-size="10" fill="#B5B5BF" text-anchor="middle">Plan</text>
+            <text x="335" y="810" font-size="20" fill="#B5B5BF" text-anchor="middle">&#9825;</text>
+            <text x="335" y="830" font-size="10" fill="#B5B5BF" text-anchor="middle">Progress</text>
+          </svg>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="scroll-hint">Scroll</div>
+</header>
+
+<section id="features">
+  <div class="wrap">
+    <span class="kicker reveal">One app, five tabs</span>
+    <h2 class="reveal d1">Everything between "what should I eat?" and "done."</h2>
+    <p class="lede reveal d2">BODA is built around five simple spaces — Home, Journal, Coach, Menu, and Move — that work together so healthy eating stops being a second job.</p>
+    <div class="grid">
+      <div class="feature reveal">
+        <div class="icon bg-coral">📓</div>
+        <h3>Journal — logging that takes seconds</h3>
+        <p>Track what you eat without the chore.</p>
+        <ul>
+          <li>Barcode scanning — always free</li>
+          <li>USDA + branded food database search</li>
+          <li>Snap a photo → AI reads the macros</li>
+          <li>Micronutrients, trends &amp; blood-test insights</li>
+        </ul>
+      </div>
+      <div class="feature reveal d1">
+        <div class="icon bg-blue">🏠</div>
+        <h3>Home — your health at a glance</h3>
+        <p>One dashboard that tells you how today is going.</p>
+        <ul>
+          <li>Calorie ring &amp; live macro bars</li>
+          <li>Streaks that keep you showing up</li>
+          <li>Notes from your dietitian, right up top</li>
+          <li>Apple Health sync built in</li>
+        </ul>
+      </div>
+      <div class="feature reveal d2">
+        <div class="icon bg-navy">🏃</div>
+        <h3>Move — workouts that adapt to you</h3>
+        <p>Training plans tuned to your level, age, and mobility.</p>
+        <ul>
+          <li>Quick questionnaire → starter workout week</li>
+          <li>Adaptive AI plan that re-tunes as you go</li>
+          <li>Challenges, streaks &amp; leaderboards with friends</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ APPLE-STYLE PINNED SCROLL STORY ============ -->
+<div class="scrolly-track" id="story">
+  <div class="scrolly-stage">
+    <div class="wrap scrolly-grid">
+
+      <div class="steps-col">
+        <div class="stepx" data-step="0">
+          <span class="kicker">Macro tracking</span>
+          <h2>Your macros, minus the math.</h2>
+          <p class="lede">Scan a barcode, search the database, or snap a photo of your plate — BODA fills in the calories, protein, carbs, and fat for you.</p>
+          <ul class="checks">
+            <li>Today's intake with live macro bars</li>
+            <li>Water &amp; micronutrients at a glance</li>
+            <li>AI photo logging — point, shoot, done</li>
+          </ul>
+        </div>
+        <div class="stepx" data-step="1">
+          <span class="kicker">AI Coach</span>
+          <h2>Just tell it what you ate.</h2>
+          <p class="lede">The Coach button lives at the center of the app. Ask anything about nutrition — or message what you had for lunch and it's logged with full macros, instantly.</p>
+          <ul class="checks">
+            <li>Log by text, voice, or photo</li>
+            <li>Instant answers, grounded in your goals</li>
+            <li>A real dietitian upgrade when you want one</li>
+          </ul>
+        </div>
+        <div class="stepx" data-step="2">
+          <span class="kicker">The AI Chef</span>
+          <h2>Welcome to Charlie's Kitchen.</h2>
+          <p class="lede">Name your restaurant, meet your chef. BODA plans the whole week — batch-prep sessions and daily meals matched to your calorie target and grocery budget.</p>
+          <ul class="checks">
+            <li>A full week planned in one tap</li>
+            <li>Batch prep — cook twice, not fourteen times</li>
+            <li>Ask Chef Remy to adjust anything</li>
+          </ul>
+        </div>
+        <div class="stepx" data-step="3">
+          <span class="kicker">Groceries</span>
+          <h2>Order your groceries right from the app.</h2>
+          <p class="lede">Your meal plan becomes a shopping list automatically — then one tap sends the whole thing to your Kroger cart. No store, no typing, no forgetting the quinoa.</p>
+          <ul class="checks">
+            <li>List auto-built from this week's menu</li>
+            <li>One tap → your entire cart, ordered in-app</li>
+            <li>Prefer the store? Check items off as you shop</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="phones-col">
+        <div class="dots" id="dots"><i class="on"></i><i></i><i></i><i></i></div>
+
+        <!-- Journal -->
+        <div class="pslot on" data-step="0">
+          <div class="phone">
+            <div class="sb"><span>9:41</span><span>5G · 100%</span></div>
+            <div class="screen">
+              <div style="display:flex;justify-content:space-between;align-items:center">
+                <div class="ph-title">Journal</div>
+                <div class="ph-link">Today ›</div>
+              </div>
+              <div class="intake">
+                <div>
+                  <div class="lab">TODAY'S INTAKE</div>
+                  <div class="big">1,850 <small>/ 3,100 cal</small></div>
+                  <div class="mlabels">
+                    <div class="ml">PROTEIN<div class="b"><i style="width:67%"></i></div></div>
+                    <div class="ml">CARBS<div class="b"><i style="width:50%"></i></div></div>
+                    <div class="ml">FAT<div class="b"><i style="width:44%"></i></div></div>
+                  </div>
+                  <div class="grams">128 / 190g&nbsp;&nbsp;·&nbsp;&nbsp;150 / 300g&nbsp;&nbsp;·&nbsp;&nbsp;40 / 90g</div>
+                </div>
+                <div class="ring60"><div class="in">60%</div></div>
+              </div>
+              <div class="duo">
+                <div class="wcard"><div class="k" style="color:#1B9E8F">WATER</div><div class="v">4 / 8 <small>cups</small></div></div>
+                <div class="wcard"><div class="k" style="color:#1FA55A">MICROS</div><div class="v">7 / 12 <small>on track</small></div></div>
+              </div>
+              <div class="slab">Breakfast · 420 cal</div>
+              <div class="wcard meal"><div class="thumb" style="background:var(--peach)"></div><div><div class="t">Greek yogurt &amp; berries</div><div class="s">420 cal · 30p · 40c · 12f</div></div></div>
+              <div class="slab">Lunch · 560 cal</div>
+              <div class="wcard meal"><div class="thumb" style="background:#E1F3E6"></div><div><div class="t">Chicken &amp; rice bowl</div><div class="s">560 cal · 48p · 55c · 14f</div></div></div>
+              <div class="slab">Dinner</div>
+              <div class="dashed">+ Add dinner</div>
+              <div class="searchrow">
+                <div class="inp">Search a food…</div>
+                <div class="sq" style="background:var(--navy)"></div>
+                <div class="sq" style="background:var(--coral);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800">+</div>
+              </div>
+            </div>
+            <div class="tabbar">
+              <div><span>🏠</span>Home</div>
+              <div class="active"><span>📓</span>Journal</div>
+              <div><div class="fabc">Coach</div></div>
+              <div><span>🍽️</span>Menu</div>
+              <div><span>🏃</span>Move</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Coach chat -->
+        <div class="pslot" data-step="1">
+          <div class="phone">
+            <div class="sb"><span>9:41</span><span>5G · 100%</span></div>
+            <div class="screen">
+              <div style="display:flex;justify-content:space-between;align-items:center">
+                <div class="ph-title">Coach</div>
+                <div class="ph-link" style="color:#1FA55A">● online</div>
+              </div>
+              <div class="chat">
+                <div class="bubble me">I had a chicken burrito bowl for lunch — rice, black beans, guac</div>
+                <div class="bubble ai">Nice choice! I've logged it for you 👇<span class="logged">✓ Logged · ~620 cal · 42p · 58c · 22f</span></div>
+                <div class="bubble me">Is that enough protein for today?</div>
+                <div class="bubble ai">You're at 128g of your 190g goal. Your salmon dinner tonight closes the gap easily 💪</div>
+                <div class="bubble me">Can I swap the salmon for something quicker?</div>
+                <div class="bubble ai">Sure — I'll ask Chef Remy for a 15-minute option with the same macros 👨‍🍳</div>
+              </div>
+              <div class="chat-input"><span>Ask me anything…</span><span>🎤 📷</span></div>
+            </div>
+            <div class="tabbar">
+              <div><span>🏠</span>Home</div>
+              <div><span>📓</span>Journal</div>
+              <div><div class="fabc" style="box-shadow:0 0 0 4px var(--peach)">Coach</div></div>
+              <div><span>🍽️</span>Menu</div>
+              <div><span>🏃</span>Move</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Meal planner -->
+        <div class="pslot" data-step="2">
+          <div class="phone">
+            <div class="sb"><span>9:41</span><span>5G · 100%</span></div>
+            <div class="screen">
+              <div class="toggle"><div class="on">Meal Planner</div><div>Groceries</div></div>
+              <div class="kitchen">
+                <div>
+                  <div class="est">EST. 2026 · YOUR KITCHEN</div>
+                  <div class="nm">Charlie's Kitchen</div>
+                </div>
+                <div class="chefpill"><div class="r">R</div><div>CHEF<b>Remy</b></div></div>
+              </div>
+              <div class="duo statduo">
+                <div class="wcard">
+                  <div class="k">CALORIES / DAY</div><div class="v">3,080 <small>/ 3,100</small></div>
+                  <div class="gbar"><i style="width:97%;background:#1FA55A"></i></div><div class="note" style="color:#1FA55A">On target</div>
+                </div>
+                <div class="wcard">
+                  <div class="k">GROCERY BUDGET</div><div class="v">$86 <small>/ $100 wk</small></div>
+                  <div class="gbar"><i style="width:86%;background:#C9A227"></i></div><div class="note" style="color:#C9A227">$14 left</div>
+                </div>
+              </div>
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-top:12px">
+                <div class="slab" style="margin:0">This week's prep</div>
+                <div class="ph-link">3 batches ›</div>
+              </div>
+              <div class="prep">
+                <div class="p" style="background:var(--navy);color:var(--cream)">
+                  <div class="tt">Sunday cook-up</div>
+                  <div class="ss">Makes 8 servings</div>
+                  <div class="ii">Chicken · rice · roasted veg</div>
+                </div>
+                <div class="p" style="background:var(--peach)">
+                  <div class="tt">Overnight oats</div>
+                  <div class="ss">Makes 5 servings</div>
+                  <div class="ii">Oats · berries · whey</div>
+                </div>
+              </div>
+              <div class="slab">Today · Wed</div>
+              <div class="mealrow"><div class="thumb" style="background:var(--peach)"></div><div><div class="lab">BREAKFAST</div><div class="tt">Overnight oats &amp; whey</div><span class="chip">makes 5 · eat 1</span></div><div class="cal">560<br>cal</div></div>
+              <div class="mealrow"><div class="thumb" style="background:#E1F3E6"></div><div><div class="lab">LUNCH</div><div class="tt">Chicken, rice &amp; veg bowl</div><span class="chip">makes 8 · eat 1.5</span></div><div class="cal">720<br>cal</div></div>
+              <div class="askchef"><div class="r">R</div>Ask Chef Remy to adjust the week…</div>
+            </div>
+            <div class="tabbar">
+              <div><span>🏠</span>Home</div>
+              <div><span>📓</span>Journal</div>
+              <div><div class="fabc">Coach</div></div>
+              <div class="active"><span>🍽️</span>Menu</div>
+              <div><span>🏃</span>Move</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Grocery -->
+        <div class="pslot" data-step="3">
+          <div class="phone">
+            <div class="sb"><span>9:41</span><span>5G · 100%</span></div>
+            <div class="screen">
+              <div class="ph-title">Plan</div>
+              <div class="toggle"><div>Meal Planner</div><div class="on">Groceries</div></div>
+              <div class="gcount">9 to buy · 2 done</div>
+              <div class="addrow">
+                <div class="inp">Add an item…</div>
+                <div class="sq" style="background:var(--coral);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800">+</div>
+              </div>
+              <div class="slab">Produce</div>
+              <div class="gitem"><div class="box"></div><span>Baby spinach</span><span class="qty">2 bags</span></div>
+              <div class="gitem"><div class="box"></div><span>Mixed berries</span><span class="qty">18 oz</span></div>
+              <div class="slab">Protein</div>
+              <div class="gitem"><div class="box"></div><span>Chicken breast</span><span class="qty">2.5 lb</span></div>
+              <div class="gitem"><div class="box"></div><span>Salmon fillet</span><span class="qty">1.5 lb</span></div>
+              <div class="slab">Pantry</div>
+              <div class="gitem"><div class="box"></div><span>Quinoa</span><span class="qty">1 box</span></div>
+              <div class="slab">Done (2)</div>
+              <div class="gitem done"><div class="box"></div><span>Olive oil</span></div>
+              <div class="navybtn">Share / export list</div>
+              <div class="navybtn" style="background:var(--blue)">Send to Kroger cart →</div>
+            </div>
+            <div class="tabbar">
+              <div><span>🏠</span>Home</div>
+              <div><span>📓</span>Journal</div>
+              <div><div class="fabc">Coach</div></div>
+              <div class="active"><span>🍽️</span>Menu</div>
+              <div><span>🏃</span>Move</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<section id="menu" class="band">
+  <div class="glow g1" style="width:380px;height:380px;top:-100px;right:-80px"></div>
+  <div class="wrap">
+    <div style="text-align:center;max-width:680px;margin:0 auto">
+      <span class="kicker reveal">The flagship: Menu</span>
+      <h2 class="reveal d1">Dinner is decided before you've thought about it.</h2>
+      <p class="lede reveal d2" style="margin-left:auto;margin-right:auto">Every recipe is vetted by registered dietitians, every week fits your goals and budget, and the whole thing bends to you — not the other way around.</p>
+    </div>
+    <div class="grid">
+      <div class="feature reveal">
+        <div class="icon" style="background:rgba(255,125,102,.18)">🍽️</div>
+        <h3>Weekly meal plans</h3>
+        <p>A full week of RD-vetted meals matched to your goals, allergies, calorie target, and grocery budget — with batch-prep sessions so you cook twice, not fourteen times.</p>
+      </div>
+      <div class="feature reveal d1">
+        <div class="icon" style="background:rgba(55,138,221,.2)">🛒</div>
+        <h3>Groceries, ordered in-app</h3>
+        <p>Your plan becomes a shopping list automatically — organized by aisle and scaled to your household. Then order it without leaving the app: one tap sends everything to your Kroger cart.</p>
+      </div>
+      <div class="feature reveal d2">
+        <div class="icon" style="background:rgba(254,254,242,.12)">👨‍🍳</div>
+        <h3>Your chef, your rules</h3>
+        <p>Don't like a meal? Ask Chef Remy to adjust the week. Swap dishes, tune preferences, regenerate — the plan adapts to you.</p>
+      </div>
+      <div class="feature reveal d3" style="position:relative">
+        <span style="position:absolute;top:18px;right:18px;background:rgba(255,125,102,.18);color:var(--coral);font-size:11px;font-weight:700;padding:4px 12px;border-radius:99px;letter-spacing:.5px">COMING SOON</span>
+        <div class="icon" style="background:rgba(255,125,102,.18)">📲</div>
+        <h3>Saw it on social? Send it to BODA.</h3>
+        <p>Found a recipe on TikTok, Instagram, or YouTube? Just share the link to BODA — it pulls the recipe, works out the macros, and drops it into your meals.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="move">
+  <div class="wrap">
+    <div class="split rev">
+      <!-- MOVE screen (from BODA_Move) -->
+      <div class="phone dark reveal">
+        <div class="sb" style="color:var(--cream)"><span>9:41</span><span>5G · 100%</span></div>
+        <div class="screen">
+          <div class="ph-title" style="color:var(--cream)">Move</div>
+          <div style="font-size:10px;color:var(--muted)">Built around your goals, level &amp; body</div>
+          <div class="weekstrip">
+            <div class="d">M<b>28</b></div><div class="d">T<b>29</b></div><div class="d today">W<b>30</b></div><div class="d">T<b>1</b></div><div class="d">F<b>2</b></div><div class="d">S<b>3</b></div><div class="d">S<b>4</b></div>
+          </div>
+          <div class="workout">
+            <div class="lab">TODAY'S WORKOUT</div>
+            <div class="tt">Upper Body · Strength</div>
+            <div class="ss">42 min · 6 exercises · Intermediate</div>
+            <div class="chips"><span>Push focus</span><span>Low impact</span><span>Dumbbell</span></div>
+            <div class="start">Start workout</div>
+          </div>
+          <div class="streak">
+            <div class="top"><span>SHOW-UP STREAK</span><b>Top 8%</b></div>
+            <div class="n">12 <small>days moving</small></div>
+            <div class="bar"><i></i></div>
+          </div>
+          <div class="slab" style="color:var(--muted)">Leaderboard · this week</div>
+          <div class="lb">
+            <div class="row"><span class="rk">1</span><div class="av2">JD</div>Jordan D.<span class="w">6 workouts</span></div>
+            <div class="row"><span class="rk">2</span><div class="av2">MK</div>Maya K.<span class="w">5 workouts</span></div>
+            <div class="row you"><span class="rk">3</span><div class="av2" style="background:var(--coral)">C</div>You<span class="w">5 workouts</span></div>
+            <div class="row"><span class="rk">4</span><div class="av2">RP</div>Riley P.<span class="w">4 workouts</span></div>
+          </div>
+        </div>
+        <div class="tabbar">
+          <div><span>🏠</span>Home</div>
+          <div><span>📓</span>Journal</div>
+          <div><div class="fabc">Coach</div></div>
+          <div><span>🍽️</span>Menu</div>
+          <div class="active"><span>🏃</span>Move</div>
+        </div>
+      </div>
+
+      <div>
+        <span class="kicker reveal">Move</span>
+        <h2 class="reveal d1">Show up. We'll handle the plan.</h2>
+        <p class="lede reveal d2">Answer a quick questionnaire and BODA builds a workout week around your goals, level, and body — then adapts it as you go. Streaks and a friends leaderboard keep you honest.</p>
+        <ul class="checks reveal d3">
+          <li>Adaptive plans tuned to level, age &amp; mobility</li>
+          <li>Show-up streaks that reward consistency</li>
+          <li>Weekly leaderboard with your friends</li>
+          <li>Challenges are free for everyone — always</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section style="padding-top:0">
+  <div class="wrap">
+    <span class="kicker reveal">How it works</span>
+    <h2 class="reveal d1">From download to dinner in four steps.</h2>
+    <div class="steps">
+      <div class="step reveal"><div class="n">1</div><h3>Tell us about you</h3><p>Goals, body stats, allergies, and how you like to eat. BODA calculates your calorie and macro targets.</p></div>
+      <div class="step reveal d1"><div class="n">2</div><h3>Set up your kitchen</h3><p>Name your restaurant and meet your chef. Yes, really — it's the fun part.</p></div>
+      <div class="step reveal d2"><div class="n">3</div><h3>Get your week</h3><p>A full meal plan, grocery list, and starter workout week — generated for you, ready to go.</p></div>
+      <div class="step reveal d3"><div class="n">4</div><h3>Live it</h3><p>Log with a scan or a photo, chat with your coach, keep your streak, and watch the trends move.</p></div>
+    </div>
+  </div>
+</section>
+
+<section id="pricing" style="background:#F7F5EC">
+  <div class="wrap">
+    <span class="kicker reveal">Pricing</span>
+    <h2 class="reveal d1">Start free. Upgrade when it clicks.</h2>
+    <p class="lede reveal d2">The essentials are free forever — including barcode scanning. BODA+ does the work for you. Coach puts a real dietitian on your team.</p>
+    <div class="tiers">
+      <div class="tier reveal">
+        <h3>Free</h3>
+        <div class="who">For getting started &amp; building the habit</div>
+        <div class="price">$0</div>
+        <div class="alt">&nbsp;</div>
+        <ul>
+          <li>Food logging, search &amp; barcode scanning</li>
+          <li>Calorie + macro tracking &amp; water logging</li>
+          <li>Home dashboard, rings &amp; streaks</li>
+          <li>AI Coach chat — 15 messages/day</li>
+          <li>Starter workout week + challenges</li>
+          <li>Apple Health sync · No ads, ever</li>
+        </ul>
+        <a class="btn ghost" href="#">Get started</a>
+      </div>
+      <div class="tier hot reveal d1">
+        <div class="badge">Founding member price</div>
+        <h3>BODA+</h3>
+        <div class="who">For people who want it done for them</div>
+        <div class="price"><span style="font-size:20px;color:#bbb;text-decoration:line-through;font-weight:600">$20</span> $12.99<small>/mo</small></div>
+        <div class="alt">Founding member price — lock it in for as long as you stay subscribed</div>
+        <div class="alt" style="color:#888;font-weight:500">or $89.99/yr — save over 40% vs regular price</div>
+        <ul>
+          <li>Everything in Free, plus:</li>
+          <li>Ongoing weekly AI meal plans + swaps</li>
+          <li>Auto grocery list &amp; Kroger cart ordering</li>
+          <li>Unlimited AI photo → macros logging</li>
+          <li>Unlimited AI Coach chat, voice &amp; photos</li>
+          <li>Micronutrients, trends &amp; lab insights</li>
+          <li>Adaptive AI workout plan</li>
+          <li>Household profiles &amp; data export</li>
+        </ul>
+        <a class="btn" href="#">Try BODA+</a>
+      </div>
+      <div class="tier reveal d2" style="opacity:.92">
+        <div class="badge" style="background:var(--navy)">Coming soon</div>
+        <h3>Coach</h3>
+        <div class="who">Add a real registered dietitian</div>
+        <div class="price">from $149<small>/mo</small></div>
+        <div class="alt">includes everything in BODA+</div>
+        <ul>
+          <li>Message a licensed RD anytime</li>
+          <li>Video, phone or in-person sessions</li>
+          <li>Custom RD-built meal plan</li>
+          <li>Session notes, adjustments &amp; homework</li>
+          <li>A human who actually knows your story</li>
+        </ul>
+        <a class="btn ghost" href="#">Join the waitlist</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section style="padding-bottom:0">
+  <div class="wrap">
+    <div class="cta-final reveal">
+      <h2>Your chef is ready when you are.</h2>
+      <p>Download BODA, set up your kitchen, and get your first week of meals — free.</p>
+      <a class="btn" href="#pricing">Start free today</a>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap foot">
+    <a class="logo" href="#"><img src="data:image/png;base64,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" alt="BODA" style="height:22px;display:block"></a>
+    <div>© 2026 BODA Nutrition · Eat better without thinking harder.</div>
+  </div>
+</footer>
+
+<script>
+(function(){
+  var reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  // Nav state
+  var nav = document.getElementById('nav');
+  function navState(){ nav.classList.toggle('scrolled', window.scrollY > 24); }
+  window.addEventListener('scroll', navState, {passive:true}); navState();
+
+  // Reveal on scroll
+  var io = new IntersectionObserver(function(entries){
+    entries.forEach(function(e){ if(e.isIntersecting){ e.target.classList.add('in'); io.unobserve(e.target); } });
+  }, {threshold:.15, rootMargin:'0px 0px -40px 0px'});
+  document.querySelectorAll('.reveal').forEach(function(el){ io.observe(el); });
+
+  // Hero phone: 3D tilt on mouse + parallax on scroll
+  var hp = document.getElementById('heroPhone');
+  var header = document.querySelector('header');
+  if(hp && !reduced && matchMedia('(pointer:fine)').matches){
+    header.addEventListener('mousemove', function(e){
+      var r = header.getBoundingClientRect();
+      var x = (e.clientX - r.left)/r.width - .5;
+      var y = (e.clientY - r.top)/r.height - .5;
+      hp.style.transform = 'rotateY('+(x*10)+'deg) rotateX('+(-y*8)+'deg)';
+    });
+    header.addEventListener('mouseleave', function(){ hp.style.transform = ''; });
+  }
+
+  // Scrollytelling
+  var track = document.getElementById('story');
+  var slots = document.querySelectorAll('.pslot');
+  var steps = document.querySelectorAll('.stepx');
+  var dots = document.querySelectorAll('#dots i');
+  var N = slots.length, current = -1;
+  function setStep(i){
+    if(i === current) return;
+    current = i;
+    slots.forEach(function(s,k){ s.classList.toggle('on', k===i); });
+    steps.forEach(function(s,k){ s.classList.toggle('on', k===i); });
+    dots.forEach(function(d,k){ d.classList.toggle('on', k===i); });
+  }
+  function onScroll(){
+    var rect = track.getBoundingClientRect();
+    var vh = window.innerHeight;
+    var total = rect.height - vh;
+    var progress = Math.min(Math.max(-rect.top / total, 0), 0.999);
+    setStep(Math.floor(progress * N));
+  }
+  window.addEventListener('scroll', onScroll, {passive:true});
+  window.addEventListener('resize', onScroll);
+  onScroll();
+  // initial state: step 0 text visible
+  setStep(0);
+})();
+</script>
+
+</body>
+</html>
+                                                
