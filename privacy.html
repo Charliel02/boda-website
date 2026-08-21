@@ -1,0 +1,69 @@
+<!doctype html>
+<!-- BODA Nutrition Privacy Policy — static page, ready to host on your own
+     domain (A2). DRAFT pending founder/legal review. Once approved: upload to
+     e.g. https://wearboda.com/privacy, then update the URL in
+     artifacts/mobile/constants/legalUrls.ts, App Store Connect, Play Console,
+     and turn the `legal` Edge Function into a redirect.
+     Keep this file and supabase/functions/legal/index.ts in sync. -->
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Privacy Policy — BODA Nutrition</title>
+<style>
+  body { margin:0; background:#FEFEF2; color:#000031; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif; line-height:1.65; }
+  .wrap { max-width:720px; margin:0 auto; padding:48px 24px 80px; }
+  h1 { font-size:28px; font-weight:600; margin:0 0 4px; }
+  .eff { color:#8a8a99; font-size:14px; margin:0 0 32px; }
+  h2 { font-size:18px; font-weight:600; margin:32px 0 8px; }
+  p { font-size:15px; margin:0 0 12px; color:#3a3a52; }
+  a { color:#FF7D66; }
+  .foot { margin-top:48px; border-top:1px solid #ECEAE0; padding-top:16px; color:#a0a0ad; font-size:13px; }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <p style="margin:0 0 24px"><a href="/" style="font-size:14px;text-decoration:none">&larr; bodanutrition.com</a></p>
+    <h1>Privacy Policy</h1>
+    <p class="eff">Effective August 21, 2026</p>
+
+    <h2>Overview</h2>
+    <p>BODA Nutrition ("BODA," "we," "us") helps you log what you eat, follow a personalized meal plan, track your health, and turn plans into grocery orders. This Privacy Policy explains what we collect, how we use it, who it is shared with, and the choices you have. BODA handles health-related information, and we treat all of it as sensitive.</p>
+
+    <h2>Information we collect</h2>
+    <p>Account information: your name and email address when you create an account.</p>
+    <p>Profile information: details you provide such as age, sex, height, weight, goal weight, activity level, dietary preferences, allergies, and health goals, which we use to calculate targets and build your plans. You can optionally add household members (name, age, sex, height, weight) to size the meal plan.</p>
+    <p>Health and activity information: your body-weight history, workout logs, habit check-ins, water intake, supplements taken, and — if you upload them — blood test files (PDF or photo) with their test date and lab name.</p>
+    <p>Food logs and photos: the meals and foods you log, custom meals and recipes you build, and any photos you submit for meal, nutrition-label, or ingredient scanning.</p>
+    <p>AI assistant conversations: messages you exchange with the in-app AI assistant are stored with your account so the conversation works across sessions.</p>
+    <p>Connected accounts: if you choose to connect Kroger, we receive limited access to add items to your cart and identify your store; we do not see your Kroger password. Your chosen store and its location/ZIP are saved with your account.</p>
+    <p>Feedback and support messages you send us.</p>
+
+    <h2>How we use your information</h2>
+    <p>To create and personalize your meal plans, nutrition targets, and grocery lists; to power the AI assistant and photo scanning; to show your own history and trends; to operate, secure, and improve the app; to add the grocery items you approve to your connected store cart; and to communicate with you about your account.</p>
+
+    <h2>How we share information</h2>
+    <p>We do not sell your personal information, and we do not use third-party advertising or analytics SDKs. We share data only with service providers that process it to run the app, and only as needed to provide the service or as required by law:</p>
+    <p>Supabase — hosts our database, authentication, and file storage (including blood test files).</p>
+    <p>Anthropic — provides the AI behind the assistant and photo scanning. Your messages, relevant profile/log context, and photos you submit for scanning are processed by Anthropic’s API to generate responses. We do not permit them to be used to train models.</p>
+    <p>Kroger — only when you connect it, to price items and add your approved list to your cart.</p>
+    <p>Instacart — only when you tap to send a shopping list, the list items are sent to Instacart to build your shareable list link.</p>
+    <p>USDA FoodData Central and Open Food Facts — food searches and barcode lookups are sent to these public food databases to return nutrition data.</p>
+    <p>Community leaderboard (opt-in only): the Move leaderboard is off by default. Only if you choose to join it do your first name, last initial, and weekly workout count appear to other signed-in BODA members — and you can leave at any time from the Move tab. Your food, weight, and blood test data are never shown to other members.</p>
+
+    <h2>Data retention and security</h2>
+    <p>We keep your information for as long as your account is active. We protect it with encryption in transit (TLS), encryption at rest, and per-user access controls (row-level security) so each account can only read its own data. Blood test files live in a private storage bucket accessible only to your account.</p>
+
+    <h2>Your choices and rights</h2>
+    <p>You can review or update your profile in the app and disconnect a linked store at any time. You can delete your account and all associated data yourself in the app (Profile → Account actions → Delete account); deletion removes your rows from every table and your uploaded files, immediately and permanently. You can also email us to request a copy of your data or ask questions about this policy.</p>
+
+    <h2>Children</h2>
+    <p>BODA is not directed to children under 13, and we do not knowingly collect personal information from them.</p>
+
+    <h2>Changes and contact</h2>
+    <p>We may update this policy from time to time; material changes will be reflected by the effective date above. Questions or requests: info@bodanutrition.com.</p>
+
+    <div class="foot">BODA Nutrition · Questions? <a href="mailto:info@bodanutrition.com">info@bodanutrition.com</a></div>
+  </div>
+</body>
+</html>
