@@ -157,6 +157,7 @@
       <button data-view="recipes">Recipes <span class="count" id="cRecipes" hidden></span></button>
       <button data-view="exercises">Exercises</button>
       <button data-view="workouts">Workouts</button>
+      <button data-view="admins">Admins</button>
     </nav>
     <div class="side-foot">
       <div id="whoami"></div>
@@ -184,7 +185,7 @@ const esc = s => String(s ?? '').replace(/[&<>"']/g, c =>
   ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
 const main = $('main');
 
-let state = { view: 'overview', recipes: [], exercises: [], workouts: [], user: null };
+let state = { view: 'overview', recipes: [], exercises: [], workouts: [], admins: [], user: null };
 
 // ── Auth ────────────────────────────────────────────────────
 $('loginForm').addEventListener('submit', async e => {
@@ -257,8 +258,8 @@ async function loadAll() {
 
 // ── Views ───────────────────────────────────────────────────
 function render() {
-  ({ overview: viewOverview, recipes: viewRecipes,
-     exercises: viewExercises, workouts: viewWorkouts })[state.view]();
+  ({ overview: viewOverview, recipes: viewRecipes, exercises: viewExercises,
+     workouts: viewWorkouts, admins: viewAdmins })[state.view]();
 }
 
 function viewOverview() {
@@ -397,6 +398,95 @@ function viewWorkouts() {
       <div class="card"><b>${esc(lvl)}</b> — ${ws.length} sessions
       <div class="small muted">${esc(ws.slice(0,6).map(w=>w.name).join(', '))}…</div></div>
     `).join('')}`;
+}
+
+
+// ── Admins ──────────────────────────────────────────────────
+// Admin is the most powerful flag in the system — it grants sight of every
+// user's imported recipes and write access to the shared library. The server
+// re-checks the caller on every call here; this screen only decides what to
+// show. Searching is limited to an explicit term so the whole membership
+// cannot be idly browsed.
+let adminSearch = '';
+async function refreshAdmins(term) {
+  const { data, error } = await sb.rpc('admin_list_users', { p_search: term || null });
+  if (error) { state.adminsError = error.message; state.admins = []; }
+  else { state.adminsError = null; state.admins = data ?? []; }
+}
+
+function viewAdmins() {
+  main.innerHTML = `
+    <h1>Admins</h1>
+    <p class="lede">Who can review recipes, edit the library, and see other users'
+      submissions. Search by email or name to give someone access.</p>
+    <div class="toolbar">
+      <input type="search" id="aq" placeholder="Search by email or name (2+ characters)"
+             value="${esc(adminSearch)}" />
+      <button class="btn sm" id="aSearch">Search</button>
+    </div>
+    <div id="adminList"><div class="spinner">Loading…</div></div>
+    <p class="tiny muted" style="margin-top:14px">
+      Only current admins are listed until you search. That is deliberate — looking someone up to
+      promote them is different from browsing everyone who uses BODA.
+    </p>`;
+  $('aSearch').onclick = async () => {
+    adminSearch = $('aq').value.trim();
+    await refreshAdmins(adminSearch);
+    drawAdmins();
+  };
+  $('aq').addEventListener('keydown', e => { if (e.key === 'Enter') $('aSearch').click(); });
+  refreshAdmins(adminSearch).then(drawAdmins);
+}
+
+function drawAdmins() {
+  const box = $('adminList');
+  if (!box) return;
+  if (state.adminsError) {
+    box.innerHTML = `<div class="empty">${esc(state.adminsError)}</div>`;
+    return;
+  }
+  const me = state.user?.id;
+  box.innerHTML = `
+    <table><thead><tr><th>Email</th><th>Name</th><th>Joined</th><th></th></tr></thead>
+    <tbody>${state.admins.map(u => `
+      <tr>
+        <td><b>${esc(u.email)}</b>${u.user_id === me ? ' <span class="pill approved">you</span>' : ''}</td>
+        <td class="muted">${esc([u.first_name, u.last_name].filter(Boolean).join(' ') || '—')}</td>
+        <td class="muted small">${new Date(u.created_at).toLocaleDateString()}</td>
+        <td style="text-align:right">
+          ${u.is_admin
+            ? (u.user_id === me
+                ? '<span class="muted small">admin</span>'
+                : `<button class="btn sm danger" data-revoke="${esc(u.user_id)}">Remove admin</button>`)
+            : `<button class="btn sm" data-grant="${esc(u.user_id)}">Make admin</button>`}
+        </td>
+      </tr>`).join('')}
+    </tbody></table>
+    ${state.admins.length === 0 ? '<div class="empty">Nobody found. Try a full email address.</div>' : ''}
+    <div class="err" id="aErr"></div>`;
+
+  box.querySelectorAll('[data-grant]').forEach(b => b.onclick = () => setAdmin(b.dataset.grant, true, b));
+  box.querySelectorAll('[data-revoke]').forEach(b => b.onclick = () => {
+    const row = state.admins.find(u => u.user_id === b.dataset.revoke);
+    if (confirm(`Remove admin access from ${row?.email}?
+
+They will lose access to this dashboard and to other users' recipe submissions.`)) {
+      setAdmin(b.dataset.revoke, false, b);
+    }
+  });
+}
+
+async function setAdmin(userId, makeAdmin, btn) {
+  btn.disabled = true;
+  const { error } = await sb.rpc('admin_set_admin', { p_user_id: userId, p_is_admin: makeAdmin });
+  if (error) {
+    const err = $('aErr');
+    if (err) err.textContent = error.message;
+    btn.disabled = false;
+    return;
+  }
+  await refreshAdmins(adminSearch);
+  drawAdmins();
 }
 
 // ── Drawer ──────────────────────────────────────────────────
