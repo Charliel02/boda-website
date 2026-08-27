@@ -1,0 +1,539 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="robots" content="noindex, nofollow" />
+<title>BODA Admin</title>
+<link rel="icon" href="../favicon-32.png" />
+<!--
+  BODA admin dashboard.
+
+  A plain static page. It talks to Supabase directly from the browser using the
+  PUBLIC anon key — the same key that ships inside the mobile app — and every
+  request is authorised by the signed-in user's own session. There is no secret
+  in this file and there must never be one: the service-role key would let
+  anyone reading the page source do anything to the database.
+
+  What actually protects the data is server-side: row-level security only lets a
+  profile flagged is_admin read other users' submissions or write content, and a
+  database trigger re-checks the exercise integrity rules on every write. This
+  page cannot bypass either, which is why it is safe for it to be public.
+-->
+<style>
+  :root{
+    --navy:#000031; --coral:#FF6F63; --cream:#FEFEF2; --white:#fff;
+    --ink:#000031; --muted:rgba(0,0,49,.55); --faint:rgba(0,0,49,.38);
+    --line:rgba(0,0,49,.10); --good:#2E9E5B; --warn:#E2A03F; --bad:#D2492A;
+    --radius:14px; --shadow:0 4px 14px rgba(0,0,49,.08);
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--cream);color:var(--ink);
+    font:15px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,sans-serif;}
+  button{font:inherit;cursor:pointer}
+  input,textarea,select{font:inherit;color:inherit}
+  a{color:var(--navy)}
+
+  /* ── Login ─────────────────────────────────────────────── */
+  .login{min-height:100vh;display:grid;place-items:center;padding:24px}
+  .login-card{background:var(--white);border-radius:20px;box-shadow:var(--shadow);
+    padding:32px;width:100%;max-width:380px}
+  .brand{font-weight:800;letter-spacing:-.5px;font-size:26px;margin:0 0 4px}
+  .brand span{color:var(--coral)}
+  .sub{color:var(--muted);font-size:13.5px;margin:0 0 22px}
+  .field{margin-bottom:14px}
+  .field label{display:block;font-size:11px;font-weight:700;letter-spacing:.6px;
+    text-transform:uppercase;color:var(--faint);margin-bottom:6px}
+  .field input{width:100%;padding:11px 13px;border:1px solid var(--line);
+    border-radius:10px;background:var(--cream)}
+  .btn{border:1px solid transparent;border-radius:11px;padding:11px 16px;font-weight:600;
+    background:var(--white);color:var(--ink);border-color:var(--line)}
+  .btn:hover{filter:brightness(.98)}
+  .btn.primary{background:var(--navy);color:var(--cream);border-color:var(--navy)}
+  .btn.coral{background:var(--coral);color:#fff;border-color:var(--coral)}
+  .btn.danger{color:var(--bad);border-color:rgba(210,73,42,.35)}
+  .btn.sm{padding:7px 11px;font-size:13px;border-radius:9px}
+  .btn:disabled{opacity:.45;cursor:not-allowed}
+  .btn.block{width:100%}
+  .err{color:var(--bad);font-size:13px;margin-top:10px;min-height:18px}
+
+  /* ── Shell ─────────────────────────────────────────────── */
+  .shell{display:none;min-height:100vh;grid-template-columns:212px 1fr}
+  .side{background:var(--navy);color:var(--cream);padding:22px 14px;display:flex;
+    flex-direction:column;gap:4px}
+  .side .brand{color:var(--cream);font-size:20px;padding:0 10px 14px}
+  .nav{display:flex;flex-direction:column;gap:2px}
+  .nav button{background:transparent;border:0;color:rgba(254,254,242,.72);
+    text-align:left;padding:10px 12px;border-radius:9px;font-weight:600;font-size:14px}
+  .nav button:hover{background:rgba(254,254,242,.08);color:var(--cream)}
+  .nav button.on{background:rgba(254,254,242,.15);color:var(--cream)}
+  .nav .count{float:right;background:var(--coral);color:#fff;border-radius:999px;
+    padding:1px 7px;font-size:11px;font-weight:700}
+  .side-foot{margin-top:auto;padding:0 10px;font-size:12px;color:rgba(254,254,242,.5)}
+  .side-foot button{color:rgba(254,254,242,.75);background:none;border:0;padding:6px 0;
+    font-size:12.5px;text-decoration:underline}
+
+  main{padding:26px 30px 60px;overflow:auto;max-height:100vh}
+  h1{font-size:23px;margin:0 0 3px}
+  .lede{color:var(--muted);font-size:13.5px;margin:0 0 20px}
+  .toolbar{display:flex;gap:10px;align-items:center;margin-bottom:16px;flex-wrap:wrap}
+  .toolbar input[type=search]{flex:1;min-width:220px;padding:9px 12px;
+    border:1px solid var(--line);border-radius:10px;background:var(--white)}
+  .chip{border:1px solid var(--line);background:var(--white);border-radius:999px;
+    padding:6px 12px;font-size:13px;font-weight:600}
+  .chip.on{background:var(--navy);color:var(--cream);border-color:var(--navy)}
+
+  .card{background:var(--white);border-radius:var(--radius);box-shadow:var(--shadow);
+    padding:16px;margin-bottom:12px}
+  .row{display:flex;gap:14px;align-items:flex-start}
+  .grow{flex:1;min-width:0}
+  .muted{color:var(--muted)}
+  .small{font-size:12.5px}
+  .tiny{font-size:11.5px}
+  .pill{display:inline-block;border-radius:999px;padding:2px 9px;font-size:11px;
+    font-weight:700;text-transform:uppercase;letter-spacing:.4px}
+  .pill.pending{background:rgba(226,160,63,.16);color:var(--warn)}
+  .pill.approved{background:rgba(46,158,91,.14);color:var(--good)}
+  .pill.rejected,.pill.failed{background:rgba(210,73,42,.13);color:var(--bad)}
+  .actions{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}
+  .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}
+  .stat{background:var(--white);border-radius:var(--radius);box-shadow:var(--shadow);padding:16px}
+  .stat b{display:block;font-size:26px;line-height:1.15}
+  .stat span{font-size:11.5px;font-weight:700;letter-spacing:.4px;color:var(--faint);
+    text-transform:uppercase}
+  table{width:100%;border-collapse:collapse;background:var(--white);
+    border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow)}
+  th,td{text-align:left;padding:10px 12px;border-bottom:1px solid var(--line);font-size:13.5px}
+  th{font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--faint)}
+  tr:last-child td{border-bottom:0}
+  tr.clickable:hover{background:rgba(0,0,49,.03);cursor:pointer}
+  .empty{padding:34px;text-align:center;color:var(--muted)}
+  .spinner{padding:34px;text-align:center;color:var(--muted)}
+
+  /* ── Editor drawer ─────────────────────────────────────── */
+  .drawer-bg{position:fixed;inset:0;background:rgba(0,0,49,.35);display:none;z-index:20}
+  .drawer{position:fixed;top:0;right:0;bottom:0;width:min(560px,100%);background:var(--cream);
+    box-shadow:-8px 0 30px rgba(0,0,49,.18);padding:24px;overflow:auto;display:none;z-index:21}
+  .drawer h2{margin:0 0 4px;font-size:19px}
+  .drawer .field textarea{width:100%;padding:10px 12px;border:1px solid var(--line);
+    border-radius:10px;background:var(--white);min-height:96px;resize:vertical}
+  .drawer .field input{background:var(--white)}
+  .locked{background:rgba(0,0,49,.045);border-radius:11px;padding:12px;font-size:12.5px;
+    color:var(--muted);margin:14px 0}
+  .problems{color:var(--bad);font-size:12.5px;margin:10px 0}
+  .ing{font-size:12.5px;padding:3px 0;border-bottom:1px solid var(--line)}
+  .ing.miss{color:var(--faint)}
+  @media (max-width:820px){ .shell{grid-template-columns:1fr} .side{flex-direction:row;
+    overflow:auto;align-items:center} .nav{flex-direction:row} .side .brand{display:none}
+    .side-foot{margin:0} }
+</style>
+</head>
+<body>
+
+<!-- ── Login ─────────────────────────────────────────────── -->
+<div class="login" id="login">
+  <form class="login-card" id="loginForm">
+    <p class="brand">BO<span>DA</span> Admin</p>
+    <p class="sub">Sign in with your BODA account. Admin access only.</p>
+    <div class="field">
+      <label for="email">Email</label>
+      <input id="email" type="email" autocomplete="username" required />
+    </div>
+    <div class="field">
+      <label for="password">Password</label>
+      <input id="password" type="password" autocomplete="current-password" required />
+    </div>
+    <button class="btn primary block" id="loginBtn" type="submit">Sign in</button>
+    <div class="err" id="loginErr"></div>
+  </form>
+</div>
+
+<!-- ── Dashboard ─────────────────────────────────────────── -->
+<div class="shell" id="shell">
+  <aside class="side">
+    <p class="brand">BO<span style="color:var(--coral)">DA</span></p>
+    <nav class="nav" id="nav">
+      <button data-view="overview" class="on">Overview</button>
+      <button data-view="recipes">Recipes <span class="count" id="cRecipes" hidden></span></button>
+      <button data-view="exercises">Exercises</button>
+      <button data-view="workouts">Workouts</button>
+    </nav>
+    <div class="side-foot">
+      <div id="whoami"></div>
+      <button id="signOut">Sign out</button>
+    </div>
+  </aside>
+  <main id="main"><div class="spinner">Loading…</div></main>
+</div>
+
+<div class="drawer-bg" id="drawerBg"></div>
+<aside class="drawer" id="drawer"></aside>
+
+<script type="module">
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+
+// Public anon key — the same one inside the mobile app. Safe here: it grants
+// nothing on its own, and row-level security decides what the signed-in user
+// may see or change.
+const SUPABASE_URL = 'https://blrbirygfkflyehjupry.supabase.co';
+const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJscmJpcnlnZmtmbHllaGp1cHJ5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgyMjM0OTIsImV4cCI6MjA5Mzc5OTQ5Mn0.7Un2ofLMs3BbNm9HRo5cnaAj0iAjH6pp1G4VBBmh2Gc';
+const sb = createClient(SUPABASE_URL, SUPABASE_ANON);
+
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c =>
+  ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
+const main = $('main');
+
+let state = { view: 'overview', recipes: [], exercises: [], workouts: [], user: null };
+
+// ── Auth ────────────────────────────────────────────────────
+$('loginForm').addEventListener('submit', async e => {
+  e.preventDefault();
+  $('loginBtn').disabled = true;
+  $('loginErr').textContent = '';
+  const { error } = await sb.auth.signInWithPassword({
+    email: $('email').value.trim(),
+    password: $('password').value,
+  });
+  $('loginBtn').disabled = false;
+  if (error) { $('loginErr').textContent = error.message; return; }
+  await start();
+});
+
+$('signOut').addEventListener('click', async () => {
+  await sb.auth.signOut();
+  location.reload();
+});
+
+async function start() {
+  const { data: { user } } = await sb.auth.getUser();
+  if (!user) return;
+
+  // Admin is checked on the SERVER too — this only decides what to show.
+  const { data: prof } = await sb.from('profiles')
+    .select('is_admin, first_name').eq('user_id', user.id).maybeSingle();
+
+  if (!prof?.is_admin) {
+    $('loginErr').textContent =
+      'That account is not an admin. Ask Charlie to enable it.';
+    await sb.auth.signOut();
+    return;
+  }
+
+  state.user = user;
+  $('whoami').textContent = prof.first_name ? `${prof.first_name} · admin` : 'admin';
+  $('login').style.display = 'none';
+  $('shell').style.display = 'grid';
+  render();
+  loadAll();
+}
+
+// ── Nav ─────────────────────────────────────────────────────
+$('nav').addEventListener('click', e => {
+  const btn = e.target.closest('button[data-view]');
+  if (!btn) return;
+  state.view = btn.dataset.view;
+  [...$('nav').children].forEach(b => b.classList.toggle('on', b === btn));
+  render();
+});
+
+// ── Data ────────────────────────────────────────────────────
+async function loadAll() {
+  const [recipes, exercises, workouts] = await Promise.all([
+    sb.from('social_recipes').select('*').order('created_at', { ascending: false }).limit(300),
+    sb.from('exercises').select('*').order('name'),
+    sb.from('workouts').select('*').order('level').limit(500),
+  ]);
+  state.recipes = recipes.data ?? [];
+  state.exercises = exercises.data ?? [];
+  state.workouts = workouts.data ?? [];
+
+  const pending = state.recipes.filter(r => r.status === 'pending').length;
+  const badge = $('cRecipes');
+  badge.hidden = pending === 0;
+  badge.textContent = pending;
+  render();
+}
+
+// ── Views ───────────────────────────────────────────────────
+function render() {
+  ({ overview: viewOverview, recipes: viewRecipes,
+     exercises: viewExercises, workouts: viewWorkouts })[state.view]();
+}
+
+function viewOverview() {
+  const r = state.recipes;
+  const homeReady = state.exercises.filter(e => e.is_home_ready).length;
+  main.innerHTML = `
+    <h1>Overview</h1>
+    <p class="lede">What is in the library and what is waiting on you.</p>
+    <div class="stats">
+      ${stat(r.filter(x => x.status === 'pending').length, 'Recipes to review')}
+      ${stat(r.filter(x => x.status === 'approved').length, 'Recipes approved')}
+      ${stat(state.exercises.length, 'Exercises')}
+      ${stat(homeReady, 'Work at home')}
+      ${stat(state.workouts.length, 'Workouts')}
+    </div>
+    ${state.exercises.length === 0 ? `
+      <div class="card" style="margin-top:18px">
+        <b>The exercise library is not on the server yet.</b>
+        <p class="small muted" style="margin:6px 0 0">
+          Open BODA on your phone → Profile → Admin → Exercise library → “Publish library to
+          server”. That uploads the 217 movements this dashboard edits. It only has to be done
+          once; after that you edit them here.
+        </p>
+      </div>` : ''}
+    ${state.workouts.length === 0 ? `
+      <div class="card">
+        <b>Workouts are not on the server yet.</b>
+        <p class="small muted" style="margin:6px 0 0">
+          The 400 sessions are currently built inside the app. Publishing them here is the next
+          piece of work — until then this dashboard shows them read-only.
+        </p>
+      </div>` : ''}
+  `;
+}
+const stat = (n, label) => `<div class="stat"><b>${n}</b><span>${esc(label)}</span></div>`;
+
+let recipeFilter = 'pending';
+function viewRecipes() {
+  const list = state.recipes.filter(r => recipeFilter === 'all' || r.status === recipeFilter);
+  main.innerHTML = `
+    <h1>Recipes</h1>
+    <p class="lede">Imported from Instagram, TikTok and YouTube by your users. Nutrition is worked
+      out from the ingredients, never from what the creator claimed.</p>
+    <div class="toolbar">
+      ${['pending','approved','rejected','failed','all']
+        .map(f => `<button class="chip ${f===recipeFilter?'on':''}" data-f="${f}">${f}</button>`).join('')}
+    </div>
+    ${list.length === 0 ? `<div class="empty">Nothing ${esc(recipeFilter)}.</div>` :
+      list.map(recipeCard).join('')}
+  `;
+  main.querySelectorAll('[data-f]').forEach(b =>
+    b.onclick = () => { recipeFilter = b.dataset.f; viewRecipes(); });
+  main.querySelectorAll('[data-recipe]').forEach(b =>
+    b.onclick = () => openRecipe(b.dataset.recipe));
+}
+
+function recipeCard(r) {
+  const ing = Array.isArray(r.ingredients) ? r.ingredients : [];
+  const matched = ing.filter(i => i.matchedFoodId).length;
+  return `
+  <div class="card">
+    <div class="row">
+      <div class="grow">
+        <div class="row" style="align-items:center;gap:8px">
+          <b>${esc(r.title || 'Untitled import')}</b>
+          <span class="pill ${esc(r.status)}">${esc(r.status)}</span>
+        </div>
+        <div class="small muted">${esc([r.source_platform, r.source_author].filter(Boolean).join(' · ') || 'unknown source')}</div>
+        ${r.status === 'failed'
+          ? `<div class="small" style="color:var(--bad);margin-top:6px">${esc(r.error_message)}</div>`
+          : `<div class="small" style="margin-top:8px">
+               <b>${r.calories ?? 0} cal</b> · ${Math.round(r.protein_grams ?? 0)}g P ·
+               ${Math.round(r.carbs_grams ?? 0)}g C · ${Math.round(r.fat_grams ?? 0)}g F
+               ${r.servings > 1 ? ' per serving' : ''}
+             </div>
+             <div class="tiny muted">${ing.length} ingredients (${matched} matched to the food
+               database) · ${(r.instructions||[]).length} steps
+               ${r.total_minutes ? ` · ${r.total_minutes} min` : ''}</div>`}
+      </div>
+      <button class="btn sm" data-recipe="${esc(r.id)}">Open</button>
+    </div>
+  </div>`;
+}
+
+function viewExercises() {
+  if (state.exercises.length === 0) {
+    main.innerHTML = `<h1>Exercises</h1>
+      <div class="empty">Not published to the server yet — see Overview for how.</div>`;
+    return;
+  }
+  main.innerHTML = `
+    <h1>Exercises</h1>
+    <p class="lede">${state.exercises.length} movements. Edit the instructions people read
+      mid-set, the cues, difficulty and rest.</p>
+    <div class="toolbar"><input type="search" id="q" placeholder="Search name, muscle or pattern" /></div>
+    <div id="exTable"></div>`;
+  const draw = () => {
+    const q = ($('q').value || '').trim().toLowerCase();
+    const rows = state.exercises.filter(e => !q ||
+      e.name.toLowerCase().includes(q) ||
+      (e.primary_muscles||[]).join(' ').toLowerCase().includes(q) ||
+      (e.movement_pattern||'').includes(q));
+    $('exTable').innerHTML = `
+      <table><thead><tr><th>Name</th><th>Muscles</th><th>Pattern</th>
+        <th>Diff</th><th>Home</th></tr></thead><tbody>
+        ${rows.map(e => `<tr class="clickable" data-ex="${esc(e.id)}">
+          <td><b>${esc(e.name)}</b></td>
+          <td class="muted">${esc((e.primary_muscles||[]).join(', '))}</td>
+          <td class="muted">${esc(e.movement_pattern)}</td>
+          <td>d${e.difficulty}</td>
+          <td>${e.is_home_ready ? '✓' : '<span class="muted">gym</span>'}</td>
+        </tr>`).join('')}
+      </tbody></table>
+      ${rows.length === 0 ? '<div class="empty">Nothing matches.</div>' : ''}`;
+    $('exTable').querySelectorAll('[data-ex]').forEach(tr =>
+      tr.onclick = () => openExercise(tr.dataset.ex));
+  };
+  $('q').addEventListener('input', draw);
+  draw();
+}
+
+function viewWorkouts() {
+  if (state.workouts.length === 0) {
+    main.innerHTML = `<h1>Workouts</h1>
+      <p class="lede">400 sessions across five levels.</p>
+      <div class="card"><b>Not published to the server yet.</b>
+      <p class="small muted" style="margin:6px 0 0">The sessions are built inside the app right
+      now. Publishing them so they can be edited here is the next piece of work.</p></div>`;
+    return;
+  }
+  const byLevel = {};
+  for (const w of state.workouts) (byLevel[w.level] ??= []).push(w);
+  main.innerHTML = `<h1>Workouts</h1>
+    <p class="lede">${state.workouts.length} sessions.</p>
+    ${Object.entries(byLevel).map(([lvl, ws]) => `
+      <div class="card"><b>${esc(lvl)}</b> — ${ws.length} sessions
+      <div class="small muted">${esc(ws.slice(0,6).map(w=>w.name).join(', '))}…</div></div>
+    `).join('')}`;
+}
+
+// ── Drawer ──────────────────────────────────────────────────
+function openDrawer(html) {
+  $('drawer').innerHTML = html;
+  $('drawer').style.display = 'block';
+  $('drawerBg').style.display = 'block';
+}
+function closeDrawer() {
+  $('drawer').style.display = 'none';
+  $('drawerBg').style.display = 'none';
+}
+$('drawerBg').onclick = closeDrawer;
+
+function openRecipe(id) {
+  const r = state.recipes.find(x => x.id === id);
+  if (!r) return;
+  const ing = Array.isArray(r.ingredients) ? r.ingredients : [];
+  openDrawer(`
+    <button class="btn sm" id="dClose">← Back</button>
+    <h2 style="margin-top:14px">${esc(r.title || 'Untitled import')}</h2>
+    <p class="small muted">${esc([r.source_platform, r.source_author].filter(Boolean).join(' · '))}</p>
+    <p class="tiny"><a href="${esc(r.source_url)}" target="_blank" rel="noopener">${esc(r.source_url)}</a></p>
+    <div class="card">
+      <b>${r.calories ?? 0} cal</b> · ${Math.round(r.protein_grams ?? 0)}g P ·
+      ${Math.round(r.carbs_grams ?? 0)}g C · ${Math.round(r.fat_grams ?? 0)}g F
+      <div class="tiny muted" style="margin-top:4px">
+        Per serving${r.servings > 1 ? ` (makes ${r.servings})` : ''} — summed from the
+        ingredients below, not from the caption.
+      </div>
+    </div>
+    <p class="small"><b>Ingredients</b> (${ing.length})</p>
+    ${ing.map(i => `<div class="ing ${i.matchedFoodId ? '' : 'miss'}">
+      ${esc([i.quantity, i.unit, i.name].filter(Boolean).join(' '))}
+      ${i.matchedFoodId ? `<span class="muted"> — ${i.calories ?? 0} cal</span>`
+        : '<span class="muted"> — no database match, not counted</span>'}
+    </div>`).join('')}
+    ${(r.instructions||[]).length ? `<p class="small" style="margin-top:16px"><b>Method</b></p>
+      <ol class="small">${r.instructions.map(s => `<li>${esc(s)}</li>`).join('')}</ol>` : ''}
+    ${(r.equipment||[]).length ? `<p class="small"><b>Equipment:</b>
+      ${esc(r.equipment.join(', '))}</p>` : ''}
+    <p class="tiny muted">Submitted by ${esc(String(r.user_id).slice(0,8))}…</p>
+    <div class="actions">
+      ${r.status !== 'approved' ? `<button class="btn coral" id="approve">Approve into the menu</button>` : ''}
+      ${r.status !== 'rejected' ? `<button class="btn danger" id="reject">Reject</button>` : ''}
+    </div>
+    <div class="err" id="rErr"></div>
+  `);
+  $('dClose').onclick = closeDrawer;
+  const approve = $('approve'), reject = $('reject');
+  if (approve) approve.onclick = async () => {
+    approve.disabled = true;
+    const { error } = await sb.rpc('approve_social_recipe', { p_id: r.id });
+    if (error) { $('rErr').textContent = error.message; approve.disabled = false; return; }
+    closeDrawer(); await loadAll();
+  };
+  if (reject) reject.onclick = async () => {
+    reject.disabled = true;
+    const { error } = await sb.from('social_recipes')
+      .update({ status: 'rejected', reviewed_at: new Date().toISOString() }).eq('id', r.id);
+    if (error) { $('rErr').textContent = error.message; reject.disabled = false; return; }
+    closeDrawer(); await loadAll();
+  };
+}
+
+function openExercise(id) {
+  const e = state.exercises.find(x => x.id === id);
+  if (!e) return;
+  openDrawer(`
+    <button class="btn sm" id="dClose">← Back</button>
+    <h2 style="margin-top:14px">${esc(e.name)}</h2>
+    <p class="small muted">${esc((e.primary_muscles||[]).join(', '))} — ${esc(e.movement_pattern)}</p>
+    <div class="field"><label>Name</label><input id="eName" value="${esc(e.name)}" /></div>
+    <div class="field"><label>Steps — one per line, 2 to 4</label>
+      <textarea id="eHow">${esc((e.how_to||[]).join('\n'))}</textarea></div>
+    <div class="field"><label>Tips — one per line, 1 to 3</label>
+      <textarea id="eTips">${esc((e.tips||[]).join('\n'))}</textarea></div>
+    <div class="field"><label>Safety — optional, one line</label>
+      <textarea id="eSafety" style="min-height:60px">${esc(e.safety || '')}</textarea></div>
+    <div class="row">
+      <div class="field grow"><label>Difficulty 1–5</label>
+        <input id="eDiff" type="number" min="1" max="5" value="${e.difficulty}" /></div>
+      <div class="field grow"><label>Rest (seconds)</label>
+        <input id="eRest" type="number" value="${e.default_rest_sec}" /></div>
+    </div>
+    <div class="locked">
+      <b>Fixed in the app build:</b> equipment (${esc((e.equipment||[]).join(', '))}), movement
+      pattern, and the home / joint-friendly swaps. Those decide whether Remix can produce a
+      workout someone is able to do and who this movement is safe to program for, so they change
+      in a release after the whole library is re-checked — not in a text box.
+    </div>
+    <div class="problems" id="eProblems"></div>
+    <div class="actions"><button class="btn primary" id="eSave">Save</button></div>
+  `);
+  $('dClose').onclick = closeDrawer;
+
+  const validate = () => {
+    const how = $('eHow').value.split('\n').map(s=>s.trim()).filter(Boolean);
+    const tips = $('eTips').value.split('\n').map(s=>s.trim()).filter(Boolean);
+    const d = Number($('eDiff').value);
+    const p = [];
+    if (how.length < 2 || how.length > 4) p.push('Steps must be 2 to 4 lines.');
+    if (how.some(l => l.length > 130)) p.push('Each step must be under 130 characters.');
+    if (tips.length < 1 || tips.length > 3) p.push('Tips must be 1 to 3 lines.');
+    if (tips.some(l => l.length > 120)) p.push('Each tip must be under 120 characters.');
+    if (!(d >= 1 && d <= 5)) p.push('Difficulty must be 1 to 5.');
+    $('eProblems').innerHTML = p.map(x => `• ${esc(x)}`).join('<br>');
+    $('eSave').disabled = p.length > 0;
+    return { how, tips, d, ok: p.length === 0 };
+  };
+  ['eHow','eTips','eDiff'].forEach(i => $(i).addEventListener('input', validate));
+  validate();
+
+  $('eSave').onclick = async () => {
+    const v = validate();
+    if (!v.ok) return;
+    $('eSave').disabled = true;
+    const { error } = await sb.from('exercises').update({
+      name: $('eName').value.trim() || e.name,
+      how_to: v.how, tips: v.tips,
+      safety: $('eSafety').value.trim() || null,
+      difficulty: v.d,
+      default_rest_sec: Number($('eRest').value) || e.default_rest_sec,
+    }).eq('id', e.id);
+    if (error) {
+      // The database re-checks the integrity rules, so this is where a change
+      // that would break Remix or the composer gets refused.
+      $('eProblems').textContent = 'Rejected by the server: ' + error.message;
+      $('eSave').disabled = false;
+      return;
+    }
+    closeDrawer(); await loadAll();
+  };
+}
+
+// ── Boot ────────────────────────────────────────────────────
+sb.auth.getSession().then(({ data }) => { if (data.session) start(); });
+</script>
+</body>
+</html>
