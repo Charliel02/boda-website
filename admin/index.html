@@ -108,6 +108,25 @@
   tr:last-child td{border-bottom:0}
   tr.clickable:hover{background:rgba(0,0,49,.03);cursor:pointer}
   .empty{padding:34px;text-align:center;color:var(--muted)}
+  .note-form textarea{width:100%;padding:11px 13px;border:1px solid var(--line);
+    border-radius:11px;background:var(--white);min-height:84px;resize:vertical}
+  .note-form label{display:block;font-size:12px;font-weight:600;margin:0 0 5px}
+  .note-form .when{display:flex;gap:14px;flex-wrap:wrap;margin-top:14px}
+  .note-form .when>div{flex:1;min-width:150px}
+  .note-form input[type=date]{width:100%;padding:9px 12px;border:1px solid var(--line);
+    border-radius:10px;background:var(--white)}
+  .note-row{display:flex;gap:14px;align-items:flex-start;padding:14px 0;
+    border-top:1px solid var(--line)}
+  .note-row:first-child{border-top:0}
+  .note-row .body{flex:1;min-width:0}
+  .pill.live{background:rgba(46,158,91,.14);color:var(--good)}
+  .pill.scheduled{background:rgba(226,160,63,.16);color:var(--warn)}
+  .pill.done{background:rgba(0,0,49,.07);color:var(--muted)}
+  .sub-day{font-size:12.5px;margin:3px 0}
+  .sub-note{background:rgba(0,0,49,.04);border-radius:11px;padding:10px 13px;margin:8px 0;font-size:13px}
+  .sub-fb{background:rgba(46,158,91,.08);border-radius:11px;padding:10px 13px;margin:8px 0;font-size:13px}
+  textarea.fb{width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:10px;
+    background:var(--white);min-height:64px;resize:vertical;margin:8px 0}
   .spinner{padding:34px;text-align:center;color:var(--muted)}
 
   /* ── Editor drawer ─────────────────────────────────────── */
@@ -179,6 +198,8 @@
       <button data-view="recipes">Recipes <span class="count" id="cRecipes" hidden></span></button>
       <button data-view="exercises">Exercises</button>
       <button data-view="workouts">Workouts</button>
+      <button data-view="dailynote">Daily note</button>
+      <button data-view="splitreviews">Split reviews <span class="count" id="cSubs" hidden></span></button>
       <button data-view="usage">Usage</button>
       <button data-view="admins">Admins</button>
     </nav>
@@ -208,7 +229,7 @@ const esc = s => String(s ?? '').replace(/[&<>"']/g, c =>
   ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
 const main = $('main');
 
-let state = { view: 'overview', recipes: [], exercises: [], workouts: [], admins: [], user: null };
+let state = { view: 'overview', recipes: [], exercises: [], workouts: [], admins: [], notes: [], subs: [], user: null };
 
 // ── Auth ────────────────────────────────────────────────────
 $('loginForm').addEventListener('submit', async e => {
@@ -263,26 +284,30 @@ $('nav').addEventListener('click', e => {
 
 // ── Data ────────────────────────────────────────────────────
 async function loadAll() {
-  const [recipes, exercises, workouts] = await Promise.all([
+  const [recipes, exercises, workouts, subsQ] = await Promise.all([
     sb.from('social_recipes').select('*').order('created_at', { ascending: false }).limit(300),
     sb.from('exercises').select('*').order('name'),
     sb.from('workouts').select('*').order('level').limit(500),
+    sb.from('workout_submissions').select('*').order('created_at', { ascending: false }).limit(200),
   ]);
   state.recipes = recipes.data ?? [];
   state.exercises = exercises.data ?? [];
   state.workouts = workouts.data ?? [];
+  state.subs = subsQ.data ?? [];
 
   const pending = state.recipes.filter(r => r.status === 'pending').length;
   const badge = $('cRecipes');
   badge.hidden = pending === 0;
   badge.textContent = pending;
+  subsBadge();
   render();
 }
 
 // ── Views ───────────────────────────────────────────────────
 function render() {
   ({ overview: viewOverview, recipes: viewRecipes, exercises: viewExercises,
-     workouts: viewWorkouts, usage: viewUsage, admins: viewAdmins })[state.view]();
+     workouts: viewWorkouts, usage: viewUsage, admins: viewAdmins,
+     dailynote: viewDailyNote, splitreviews: viewSplitReviews })[state.view]();
 }
 
 function viewOverview() {
@@ -639,6 +664,249 @@ async function refreshAdmins(term) {
   const { data, error } = await sb.rpc('admin_list_users', { p_search: term || null });
   if (error) { state.adminsError = error.message; state.admins = []; }
   else { state.adminsError = null; state.admins = data ?? []; }
+}
+
+
+// -- Daily note ----------------------------------------------
+// The app generates a fresh note every day on its own. A row published here
+// overrides it for the days it covers; when none does, the app goes straight
+// back to generating. Nothing here changes the generator.
+const NOTE_MAX = 200;
+const todayISO = () => {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+};
+
+function noteStatus(n) {
+  const t = todayISO();
+  if (!n.is_active) return { key: 'done', label: 'Stopped' };
+  if (n.starts_on > t) return { key: 'scheduled', label: 'Scheduled' };
+  if (n.ends_on && n.ends_on < t) return { key: 'done', label: 'Ended' };
+  return { key: 'live', label: 'Live now' };
+}
+
+function viewDailyNote() {
+  main.innerHTML = `
+    <h1>Daily note</h1>
+    <p class="lede">BODA writes a fresh note for the Home screen every day. Publish one here and
+      it takes over for the days you choose &mdash; the generator keeps running underneath and
+      picks straight back up when yours stops.</p>
+    <div class="card note-form">
+      <label for="nBody">Message</label>
+      <textarea id="nBody" maxlength="${NOTE_MAX}" placeholder="Water first, then coffee. Old rule, still undefeated."></textarea>
+      <p class="tiny muted" id="nCount" style="margin:6px 0 0"></p>
+      <div class="when">
+        <div>
+          <label for="nFrom">Show from</label>
+          <input type="date" id="nFrom" value="${todayISO()}" />
+        </div>
+        <div>
+          <label for="nTo">Stop after <span class="muted" style="font-weight:400">&mdash; blank pins it</span></label>
+          <input type="date" id="nTo" />
+        </div>
+      </div>
+      <div class="toolbar" style="margin:16px 0 0">
+        <button class="btn primary" id="nPublish">Publish</button>
+        <span class="tiny muted" id="nMsg"></span>
+      </div>
+    </div>
+    <h2 style="font-size:15px;margin:26px 0 4px">Published notes</h2>
+    <p class="tiny muted" style="margin:0 0 10px">Only one shows in the app at a time &mdash; the newest that covers today.</p>
+    <div class="card" id="noteList"><div class="spinner">Loading&hellip;</div></div>
+    <p class="tiny muted" style="margin-top:14px">
+      Dates are your local dates. A note reaches people the next time they open the app, not instantly.
+    </p>`;
+
+  const body = $('nBody'), count = $('nCount');
+  const tick = () => {
+    const n = body.value.trim().length;
+    count.textContent = `${n} / ${NOTE_MAX} characters. Short lands best - the card hugs the text.`;
+  };
+  body.addEventListener('input', tick); tick();
+
+  $('nPublish').onclick = publishNote;
+  refreshNotes().then(drawNotes);
+}
+
+async function refreshNotes() {
+  const { data, error } = await sb.from('admin_daily_notes')
+    .select('*')
+    .order('starts_on', { ascending: false })
+    .order('created_at', { ascending: false })
+    .limit(100);
+  state.notes = data ?? [];
+  state.notesError = error ? error.message : null;
+}
+
+async function publishNote() {
+  const btn = $('nPublish'), msg = $('nMsg');
+  const text = $('nBody').value.trim();
+  const from = $('nFrom').value || todayISO();
+  const to   = $('nTo').value || null;
+
+  if (!text) { msg.textContent = 'Write a message first.'; return; }
+  if (text.length > NOTE_MAX) { msg.textContent = `Too long by ${text.length - NOTE_MAX}.`; return; }
+  if (to && to < from) { msg.textContent = 'The stop date is before the start date.'; return; }
+
+  btn.disabled = true; msg.textContent = 'Publishing...';
+  const uid = (await sb.auth.getUser()).data.user?.id ?? null;
+  const { error } = await sb.from('admin_daily_notes')
+    .insert({ body: text, starts_on: from, ends_on: to, created_by: uid });
+  btn.disabled = false;
+
+  if (error) { msg.textContent = `Could not publish: ${error.message}`; return; }
+  msg.textContent = 'Published.';
+  $('nBody').value = ''; $('nTo').value = '';
+  body_input_refresh();
+  await refreshNotes(); drawNotes();
+}
+
+function body_input_refresh() {
+  const el = $('nBody');
+  if (el) el.dispatchEvent(new Event('input'));
+}
+
+function drawNotes() {
+  const box = $('noteList');
+  if (!box) return;
+  if (state.notesError) { box.innerHTML = `<div class="empty">${esc(state.notesError)}</div>`; return; }
+  if (!state.notes.length) {
+    box.innerHTML = `<div class="empty">Nothing published. The app is writing its own note each day.</div>`;
+    return;
+  }
+  box.innerHTML = state.notes.map(n => {
+    const st = noteStatus(n);
+    const when = n.starts_on === n.ends_on
+      ? esc(n.starts_on)
+      : `${esc(n.starts_on)} &rarr; ${esc(n.ends_on || 'until stopped')}`;
+    return `<div class="note-row">
+      <div class="body">
+        <div style="margin-bottom:5px">${esc(n.body)}</div>
+        <span class="pill ${st.key}">${st.label}</span>
+        <span class="tiny muted" style="margin-left:8px">${when}</span>
+      </div>
+      ${n.is_active ? `<button class="btn sm danger" data-stop="${esc(n.id)}">Stop</button>` : ''}
+    </div>`;
+  }).join('');
+
+  box.querySelectorAll('[data-stop]').forEach(b => {
+    b.onclick = async () => {
+      b.disabled = true;
+      const { error } = await sb.from('admin_daily_notes')
+        .update({ is_active: false, updated_at: new Date().toISOString() })
+        .eq('id', b.dataset.stop);
+      if (error) { b.disabled = false; alert(`Could not stop it: ${error.message}`); return; }
+      await refreshNotes(); drawNotes();
+    };
+  });
+}
+
+// -- Split reviews -------------------------------------------
+// Users opt in from My splits: the row carries a snapshot of the split as
+// submitted plus their note. Feedback written here lands on that same row
+// and shows up in the app. The submit sheet in the app already teaches the
+// format (instructions + example), so expect notes in that shape.
+
+function viewSplitReviews() {
+  main.innerHTML = `
+    <h1>Split reviews</h1>
+    <p class="lede">Workout splits people sent in for a second pair of eyes. Read the split,
+      write what you&rsquo;d keep and what you&rsquo;d change, send it back &mdash; your notes
+      appear on their My splits page.</p>
+    <div class="card" id="subList"><div class="spinner">Loading&hellip;</div></div>`;
+  refreshSubs().then(drawSubs);
+}
+
+async function refreshSubs() {
+  const { data, error } = await sb.from('workout_submissions')
+    .select('*')
+    .order('created_at', { ascending: false })
+    .limit(200);
+  state.subs = data ?? [];
+  state.subsError = error ? error.message : null;
+  subsBadge();
+}
+
+function subsBadge() {
+  const badge = $('cSubs');
+  if (!badge) return;
+  const n = state.subs.filter(x => x.status === 'pending').length;
+  badge.hidden = n === 0;
+  badge.textContent = n;
+}
+
+function subSplitHtml(snap) {
+  const days = (snap && Array.isArray(snap.days) ? snap.days.slice() : [])
+    .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
+  if (!days.length) return '<div class="sub-day muted">(empty split)</div>';
+  return days.map(d => {
+    if (d.isRest) return `<div class="sub-day"><b>${esc(d.dayName)}</b> <span class="muted">rest</span></div>`;
+    const exs = (d.exercises ?? []).map(ex => {
+      const c = ex.cardio;
+      let tail;
+      if (c && (c.miles || c.minutes || c.incline || c.speed)) {
+        tail = [
+          c.miles ? `${c.miles} mi` : null,
+          c.minutes ? `${c.minutes} min` : null,
+          c.incline ? `${c.incline}%` : null,
+          c.speed ? `${c.speed} mph` : null,
+        ].filter(Boolean).join(' / ');
+      } else if (c) {
+        tail = 'cardio';
+      } else {
+        const hi = ex.repHigh != null && ex.repHigh !== ex.repLow ? '&ndash;' + ex.repHigh : '';
+        tail = `${ex.targetSets}&times;${ex.repLow ?? '?'}${hi}`;
+      }
+      return `${esc(ex.name)} ${tail}`;
+    }).join(' &middot; ');
+    return `<div class="sub-day"><b>${esc(d.dayName)}</b> <span class="muted">${exs || '(no exercises)'}</span></div>`;
+  }).join('');
+}
+
+function drawSubs() {
+  const box = $('subList');
+  if (!box) return;
+  if (state.subsError) { box.innerHTML = `<div class="empty">${esc(state.subsError)}</div>`; return; }
+  if (!state.subs.length) {
+    box.innerHTML = `<div class="empty">Nothing submitted yet. People send splits in from My splits in the app.</div>`;
+    return;
+  }
+  const fmt = x => x ? new Date(x).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) : '';
+  const rows = state.subs.slice()
+    .sort((a, b) => (a.status === 'pending' ? 0 : 1) - (b.status === 'pending' ? 0 : 1));
+  box.innerHTML = rows.map(r => {
+    const who = r.submitter_name || ('user ' + String(r.user_id ?? '').slice(0, 8));
+    const pill = r.status === 'pending'
+      ? '<span class="pill scheduled">Waiting</span>'
+      : '<span class="pill done">Reviewed</span>';
+    return `<div class="note-row"><div class="body">
+      <div style="margin-bottom:4px"><b>${esc(r.split_name)}</b> ${pill}
+        <span class="tiny muted" style="margin-left:8px">${esc(who)} &middot; ${fmt(r.created_at)}</span>
+      </div>
+      ${subSplitHtml(r.split_snapshot)}
+      ${r.note ? `<div class="sub-note"><span class="tiny muted" style="display:block;margin-bottom:3px">THEY ASKED</span>${esc(r.note)}</div>` : ''}
+      ${r.status === 'pending'
+        ? `<textarea class="fb" data-fb="${esc(r.id)}" placeholder="What you'd keep, what you'd change, and why."></textarea>
+           <button class="btn primary sm" data-send="${esc(r.id)}">Send feedback</button>`
+        : `<div class="sub-fb"><span class="tiny muted" style="display:block;margin-bottom:3px">YOUR FEEDBACK &middot; ${fmt(r.reviewed_at)}</span>${esc(r.admin_feedback ?? '')}</div>`}
+    </div></div>`;
+  }).join('');
+
+  box.querySelectorAll('[data-send]').forEach(b => {
+    b.onclick = async () => {
+      const id = b.dataset.send;
+      const ta = box.querySelector('textarea[data-fb="' + id + '"]');
+      const text = (ta && ta.value ? ta.value : '').trim();
+      if (!text) { alert('Write the feedback first.'); return; }
+      b.disabled = true;
+      const uid = (await sb.auth.getUser()).data.user?.id ?? null;
+      const { error } = await sb.from('workout_submissions')
+        .update({ status: 'reviewed', admin_feedback: text, reviewed_at: new Date().toISOString(), reviewed_by: uid })
+        .eq('id', id);
+      if (error) { b.disabled = false; alert('Could not send: ' + error.message); return; }
+      await refreshSubs(); drawSubs();
+    };
+  });
 }
 
 function viewAdmins() {
