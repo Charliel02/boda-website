@@ -321,6 +321,21 @@ const DIET_TAGS  = ['vegan', 'vegetarian', 'pescatarian', 'gluten-free', 'dairy-
 const CUISINES   = ['american', 'indian', 'italian', 'japanese', 'mediterranean', 'mexican',
                     'middle-eastern', 'thai'];
 
+// Exercise vocabularies — these mirror data/workoutLibrary/types.ts exactly.
+// They are not cosmetic: the database derives is_home_ready from EQUIPMENT and
+// requires a gym-only movement to name a home alternative training the SAME
+// pattern, so a typo here becomes a rejected save.
+const EQUIPMENT = ['barbell', 'dumbbell', 'machine', 'cable', 'kettlebell', 'band',
+                   'bodyweight', 'bench', 'pullup_bar', 'rack', 'sled', 'box', 'none'];
+// Equipment that means a gym. Kept identical to validate_exercise_row().
+const GYM_EQUIPMENT = ['barbell', 'machine', 'cable', 'rack', 'sled'];
+const PATTERNS = ['squat', 'hinge', 'lunge', 'push_h', 'push_v', 'pull_h', 'pull_v',
+                  'carry', 'core', 'conditioning', 'mobility', 'isolation'];
+const LEVELS = ['beginner', 'intermediate', 'advanced', 'elite', 'master'];
+const OVERLOADS = ['weight', 'reps', 'time', 'none'];
+
+const isGymOnly = equip => (equip ?? []).some(x => GYM_EQUIPMENT.includes(x));
+
 // ── Auth ────────────────────────────────────────────────────
 $('loginForm').addEventListener('submit', async e => {
   e.preventDefault();
@@ -1573,13 +1588,16 @@ function openExercise(id) {
   const isNew = !id;
   const e = isNew
     ? { id: '', name: '', primary_muscles: [], secondary_muscles: [], equipment: [],
-        movement_pattern: '', difficulty: 3, default_rest_sec: 90, how_to: [], tips: [],
-        safety: '', is_home_ready: false, is_active: true, image_url: null, video_url: null }
+        movement_pattern: 'push_h', min_level: 'beginner', overload: 'reps', load_step: 0,
+        difficulty: 3, default_rest_sec: 90, how_to: [], tips: [], safety: '',
+        home_alternate_id: null, low_impact_alternate_id: null,
+        is_active: true, image_url: null, video_url: null }
     : state.exercises.find(x => x.id === id);
   if (!e) return;
 
   let imageUrl = e.image_url ?? null;
   const csv = a => (Array.isArray(a) ? a : []).join(', ');
+  const sel = (v, cur) => `<option value="${esc(v)}" ${v === cur ? 'selected' : ''}>${esc(v)}</option>`;
 
   openDrawer(`
     <button class="btn sm" id="dClose">← Back</button>
@@ -1605,20 +1623,38 @@ function openExercise(id) {
 
     <div class="row">
       <div class="field grow"><label>Primary muscles — comma separated</label>
-        <input id="eMus" value="${esc(csv(e.primary_muscles))}" placeholder="chest, triceps" /></div>
+        <input id="eMus" value="${esc(csv(e.primary_muscles))}" placeholder="Chest, Triceps" /></div>
       <div class="field grow"><label>Secondary muscles</label>
-        <input id="eMus2" value="${esc(csv(e.secondary_muscles))}" placeholder="shoulders" /></div>
+        <input id="eMus2" value="${esc(csv(e.secondary_muscles))}" placeholder="Front Delts" /></div>
+    </div>
+
+    <div class="field"><label>Equipment</label>
+      <div id="eEquip">${EQUIPMENT.map(q => `<label class="tiny" style="margin-right:11px;white-space:nowrap">
+        <input type="checkbox" value="${esc(q)}" ${(e.equipment ?? []).includes(q) ? 'checked' : ''} /> ${esc(q)}
+      </label>`).join('')}</div>
+      <p class="tiny muted" id="homeCalc" style="margin:7px 0 0"></p></div>
+
+    <div class="row">
+      <div class="field grow"><label>Movement pattern</label>
+        <select id="ePat">${PATTERNS.map(x => sel(x, e.movement_pattern)).join('')}</select></div>
+      <div class="field grow"><label>Minimum level</label>
+        <select id="eLevel">${LEVELS.map(x => sel(x, e.min_level ?? 'beginner')).join('')}</select></div>
     </div>
     <div class="row">
-      <div class="field grow"><label>Equipment — comma separated</label>
-        <input id="eEquip" value="${esc(csv(e.equipment))}" placeholder="barbell, bench" /></div>
-      <div class="field grow"><label>Movement pattern</label>
-        <input id="ePat" list="patterns" value="${esc(e.movement_pattern || '')}" placeholder="push" />
-        <datalist id="patterns">
-          ${['push','pull','squat','hinge','lunge','carry','core','isolation','cardio']
-            .map(x => `<option value="${x}">`).join('')}
-        </datalist></div>
+      <div class="field grow"><label>Overload — how it gets harder</label>
+        <select id="eOver">${OVERLOADS.map(x => sel(x, e.overload ?? 'reps')).join('')}</select></div>
+      <div class="field grow"><label>Load step (kg per jump)</label>
+        <input id="eStep" type="number" step="0.5" value="${e.load_step ?? 0}" /></div>
     </div>
+
+    <div class="field" id="altWrap"><label>Home alternative
+        <span class="muted" style="font-weight:400">— required for gym-only movements</span></label>
+      <select id="eAlt"></select>
+      <p class="tiny muted" style="margin:5px 0 0">Must be home-ready and train the same pattern —
+        this is what Remix swaps in when someone has no gym.</p></div>
+
+    <div class="field"><label>Joint-friendly alternative — optional</label>
+      <select id="eLow"></select></div>
 
     <div class="field"><label>Steps — one per line, 2 to 4</label>
       <textarea id="eHow">${esc((e.how_to || []).join('\n'))}</textarea></div>
@@ -1635,10 +1671,6 @@ function openExercise(id) {
     </div>
 
     <div class="field"><label class="tiny">
-      <input type="checkbox" id="eHome" ${e.is_home_ready ? 'checked' : ''} />
-      Can be done at home — no gym machine needed
-    </label></div>
-    <div class="field"><label class="tiny">
       <input type="checkbox" id="eActive" ${e.is_active !== false ? 'checked' : ''} />
       Active — unticking retires it without deleting it
     </label></div>
@@ -1651,23 +1683,64 @@ function openExercise(id) {
   `);
   $('dClose').onclick = closeDrawer;
 
-  const validate = () => {
+  const equipNow = () => [...$('eEquip').querySelectorAll('input:checked')].map(i => i.value);
+
+  // is_home_ready is DERIVED, never typed: the database rejects any row whose
+  // flag disagrees with its equipment, so offering a checkbox would only invite
+  // a rejected save.
+  function refreshAlternates() {
+    const gym = isGymOnly(equipNow());
+    const pattern = $('ePat').value;
+    $('homeCalc').innerHTML = gym
+      ? '<b>Gym-only</b> — needs a home alternative below.'
+      : '<b>Home-ready</b> — no gym equipment selected.';
+    $('altWrap').style.display = gym ? '' : 'none';
+
+    const homeOptions = state.exercises
+      .filter(x => x.id !== e.id && x.is_home_ready && x.movement_pattern === pattern)
+      .sort((a, b) => a.name.localeCompare(b.name));
+    $('eAlt').innerHTML = `<option value="">— choose —</option>` +
+      homeOptions.map(x => `<option value="${esc(x.id)}" ${x.id === e.home_alternate_id ? 'selected' : ''}>${esc(x.name)}</option>`).join('');
+    if (gym && homeOptions.length === 0) {
+      $('eAlt').innerHTML = `<option value="">no home-ready ${esc(pattern)} movement exists yet</option>`;
+    }
+
+    const d = Number($('eDiff').value) || 5;
+    const lowOptions = state.exercises
+      .filter(x => x.id !== e.id && (x.difficulty ?? 5) <= d)
+      .sort((a, b) => a.name.localeCompare(b.name));
+    $('eLow').innerHTML = `<option value="">— none —</option>` +
+      lowOptions.map(x => `<option value="${esc(x.id)}" ${x.id === e.low_impact_alternate_id ? 'selected' : ''}>${esc(x.name)}</option>`).join('');
+    validate();
+  }
+
+  function validate() {
     const how = $('eHow').value.split('\n').map(x => x.trim()).filter(Boolean);
     const tips = $('eTips').value.split('\n').map(x => x.trim()).filter(Boolean);
     const d = Number($('eDiff').value);
+    const equip = equipNow();
     const p = [];
     if (!$('eName').value.trim()) p.push('Name is required.');
+    if (equip.length === 0) p.push('Pick at least one piece of equipment (use "bodyweight" or "none").');
+    if (!$('eMus').value.trim()) p.push('Primary muscles cannot be empty.');
     if (how.length < 2 || how.length > 4) p.push('Steps must be 2 to 4 lines.');
     if (how.some(l => l.length > 130)) p.push('Each step must be under 130 characters.');
     if (tips.length < 1 || tips.length > 3) p.push('Tips must be 1 to 3 lines.');
     if (tips.some(l => l.length > 120)) p.push('Each tip must be under 120 characters.');
     if (!(d >= 1 && d <= 5)) p.push('Difficulty must be 1 to 5.');
+    if (isGymOnly(equip) && !$('eAlt').value) {
+      p.push('A gym-only movement must name a home alternative training the same pattern.');
+    }
     $('eProblems').innerHTML = p.map(x => `• ${esc(x)}`).join('<br>');
     $('eSave').disabled = p.length > 0;
-    return { how, tips, d, ok: p.length === 0 };
-  };
-  ['eHow','eTips','eDiff','eName'].forEach(i => $(i).addEventListener('input', validate));
-  validate();
+    return { how, tips, d, equip, ok: p.length === 0 };
+  }
+
+  $('eEquip').addEventListener('change', refreshAlternates);
+  $('ePat').addEventListener('change', refreshAlternates);
+  $('eDiff').addEventListener('input', refreshAlternates);
+  ['eHow', 'eTips', 'eName', 'eMus', 'eAlt'].forEach(i => $(i).addEventListener('input', validate));
+  refreshAlternates();
 
   $('eSave').onclick = async () => {
     const v = validate();
@@ -1685,26 +1758,32 @@ function openExercise(id) {
     }
 
     const list = el => $(el).value.split(',').map(x => x.trim()).filter(Boolean);
+    const gym = isGymOnly(v.equip);
     const payload = {
       id: rowId,
       name,
       primary_muscles: list('eMus'),
       secondary_muscles: list('eMus2'),
-      equipment: list('eEquip'),
-      movement_pattern: $('ePat').value.trim() || null,
+      equipment: v.equip,
+      movement_pattern: $('ePat').value,
+      min_level: $('eLevel').value,
+      overload: $('eOver').value,
+      load_step: Number($('eStep').value) || 0,
       how_to: v.how, tips: v.tips,
       safety: $('eSafety').value.trim() || null,
       difficulty: v.d,
       default_rest_sec: Number($('eRest').value) || 90,
-      is_home_ready: $('eHome').checked,
+      home_alternate_id: gym ? ($('eAlt').value || null) : null,
+      low_impact_alternate_id: $('eLow').value || null,
+      is_home_ready: !gym,          // derived, to match the database's own rule
       is_active: $('eActive').checked,
       image_url: imageUrl,
       video_url: $('exVideo').value.trim() || null,
       updated_at: new Date().toISOString(),
     };
 
-    // The database re-checks its own integrity rules, so a change that would
-    // break the library gets refused here rather than silently accepted.
+    // The trigger re-checks all of this server-side, so a change that would
+    // break Remix or the composer is refused here rather than silently landing.
     const { error } = await sb.from('exercises').upsert(payload);
     btn.disabled = false;
     if (error) { $('eProblems').textContent = 'Rejected by the server: ' + error.message; return; }
