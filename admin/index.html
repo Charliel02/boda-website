@@ -122,6 +122,39 @@
   .pill.live{background:rgba(46,158,91,.14);color:var(--good)}
   .pill.scheduled{background:rgba(226,160,63,.16);color:var(--warn)}
   .pill.done{background:rgba(0,0,49,.07);color:var(--muted)}
+  /* Sheet tables (recipes / exercises) */
+  .sheet-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:14px;background:var(--white)}
+  table.sheet{width:100%;border-collapse:collapse;font-size:13px;min-width:840px}
+  table.sheet thead th{position:sticky;top:0;background:#F7F7EE;z-index:1;text-align:left;
+    font-size:10.5px;letter-spacing:.5px;text-transform:uppercase;color:var(--muted);
+    padding:9px 12px;border-bottom:1px solid var(--line);white-space:nowrap}
+  table.sheet td{padding:8px 12px;border-bottom:1px solid var(--line);vertical-align:middle}
+  table.sheet tbody tr:hover{background:rgba(0,0,49,.03);cursor:pointer}
+  table.sheet td.num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+  table.sheet td.nm{font-weight:600;max-width:280px}
+  .thumb{width:38px;height:38px;border-radius:8px;object-fit:cover;background:#EFEFE3;display:block}
+  .thumb.ph{display:flex;align-items:center;justify-content:center;font-size:15px;color:var(--muted)}
+  .tagline{display:flex;gap:4px;flex-wrap:wrap}
+  .tg{font-size:10px;padding:2px 7px;border-radius:999px;background:rgba(0,0,49,.06);color:var(--muted);white-space:nowrap}
+  .sheet-bar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:12px}
+  .sheet-bar input[type=search]{flex:1;min-width:200px}
+  .rowcount{font-size:12px;color:var(--muted);margin:10px 2px 0}
+  /* Editor bits */
+  .imgbox{display:flex;gap:14px;align-items:center;margin-bottom:14px}
+  .imgbox .prev{width:82px;height:82px;border-radius:12px;object-fit:cover;background:#EFEFE3;
+    display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:11px;text-align:center}
+  .ing-row{display:grid;grid-template-columns:58px 70px 1fr 128px 24px;gap:6px;align-items:start;margin-bottom:7px}
+  .ing-row input{width:100%;padding:7px 9px;border:1px solid var(--line);border-radius:8px;
+    font-size:12.5px;background:var(--white)}
+  .ing-name-wrap{position:relative}
+  .ac{position:absolute;top:calc(100% + 2px);left:0;right:0;background:#fff;border:1px solid var(--line);
+    border-radius:10px;box-shadow:0 10px 24px rgba(0,0,49,.16);z-index:30;max-height:240px;overflow:auto}
+  .ac div{padding:8px 10px;font-size:12.5px;cursor:pointer;border-bottom:1px solid var(--line)}
+  .ac div:last-child{border-bottom:0}
+  .ac div:hover{background:rgba(0,0,49,.05)}
+  .ac .u{color:var(--muted);font-size:11px;display:block}
+  .matched{font-size:10.5px;color:var(--good);margin-top:3px}
+  .xbtn{border:0;background:transparent;color:var(--muted);cursor:pointer;font-size:16px;padding:6px 0}
   .sub-day{font-size:12.5px;margin:3px 0}
   .sub-note{background:rgba(0,0,49,.04);border-radius:11px;padding:10px 13px;margin:8px 0;font-size:13px}
   .sub-fb{background:rgba(46,158,91,.08);border-radius:11px;padding:10px 13px;margin:8px 0;font-size:13px}
@@ -195,8 +228,9 @@
     <p class="brand">BO<span style="color:var(--coral)">DA</span></p>
     <nav class="nav" id="nav">
       <button data-view="overview" class="on">Overview</button>
-      <button data-view="recipes">Recipes <span class="count" id="cRecipes" hidden></span></button>
+      <button data-view="catalog">Recipes</button>
       <button data-view="exercises">Exercises</button>
+      <button data-view="recipes">Imports <span class="count" id="cRecipes" hidden></span></button>
       <button data-view="workouts">Workouts</button>
       <button data-view="dailynote">Daily note</button>
       <button data-view="splitreviews">Split reviews <span class="count" id="cSubs" hidden></span></button>
@@ -229,7 +263,15 @@ const esc = s => String(s ?? '').replace(/[&<>"']/g, c =>
   ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
 const main = $('main');
 
-let state = { view: 'overview', recipes: [], exercises: [], workouts: [], admins: [], notes: [], subs: [], user: null };
+let state = { view: 'overview', recipes: [], catalog: [], exercises: [], workouts: [],
+              admins: [], notes: [], subs: [], user: null };
+
+// Vocabularies read off the live table (2026-09-01) rather than guessed, so the
+// editor can only produce values the app already understands.
+const MEAL_TYPES = ['breakfast', 'lunch', 'dinner', 'snack'];
+const DIET_TAGS  = ['vegan', 'vegetarian', 'pescatarian', 'gluten-free', 'dairy-free', 'nut-free'];
+const CUISINES   = ['american', 'indian', 'italian', 'japanese', 'mediterranean', 'mexican',
+                    'middle-eastern', 'thai'];
 
 // ── Auth ────────────────────────────────────────────────────
 $('loginForm').addEventListener('submit', async e => {
@@ -284,16 +326,18 @@ $('nav').addEventListener('click', e => {
 
 // ── Data ────────────────────────────────────────────────────
 async function loadAll() {
-  const [recipes, exercises, workouts, subsQ] = await Promise.all([
+  const [recipes, exercises, workouts, subsQ, catalogQ] = await Promise.all([
     sb.from('social_recipes').select('*').order('created_at', { ascending: false }).limit(300),
     sb.from('exercises').select('*').order('name'),
     sb.from('workouts').select('*').order('level').limit(500),
     sb.from('workout_submissions').select('*').order('created_at', { ascending: false }).limit(200),
+    sb.from('recipes').select('*').order('name').limit(2000),
   ]);
   state.recipes = recipes.data ?? [];
   state.exercises = exercises.data ?? [];
   state.workouts = workouts.data ?? [];
   state.subs = subsQ.data ?? [];
+  state.catalog = catalogQ.data ?? [];
 
   const pending = state.recipes.filter(r => r.status === 'pending').length;
   const badge = $('cRecipes');
@@ -307,7 +351,8 @@ async function loadAll() {
 function render() {
   ({ overview: viewOverview, recipes: viewRecipes, exercises: viewExercises,
      workouts: viewWorkouts, usage: viewUsage, admins: viewAdmins,
-     dailynote: viewDailyNote, splitreviews: viewSplitReviews })[state.view]();
+     dailynote: viewDailyNote, splitreviews: viewSplitReviews,
+     catalog: viewCatalog })[state.view]();
 }
 
 function viewOverview() {
@@ -392,41 +437,70 @@ function recipeCard(r) {
   </div>`;
 }
 
+let exQuery = '';
+
 function viewExercises() {
-  if (state.exercises.length === 0) {
-    main.innerHTML = `<h1>Exercises</h1>
-      <div class="empty">Not published to the server yet — see Overview for how.</div>`;
-    return;
-  }
   main.innerHTML = `
     <h1>Exercises</h1>
-    <p class="lede">${state.exercises.length} movements. Edit the instructions people read
-      mid-set, the cues, difficulty and rest.</p>
-    <div class="toolbar"><input type="search" id="q" placeholder="Search name, muscle or pattern" /></div>
-    <div id="exTable"></div>`;
-  const draw = () => {
-    const q = ($('q').value || '').trim().toLowerCase();
-    const rows = state.exercises.filter(e => !q ||
-      e.name.toLowerCase().includes(q) ||
-      (e.primary_muscles||[]).join(' ').toLowerCase().includes(q) ||
-      (e.movement_pattern||'').includes(q));
-    $('exTable').innerHTML = `
-      <table><thead><tr><th>Name</th><th>Muscles</th><th>Pattern</th>
-        <th>Diff</th><th>Home</th></tr></thead><tbody>
-        ${rows.map(e => `<tr class="clickable" data-ex="${esc(e.id)}">
-          <td><b>${esc(e.name)}</b></td>
-          <td class="muted">${esc((e.primary_muscles||[]).join(', '))}</td>
-          <td class="muted">${esc(e.movement_pattern)}</td>
-          <td>d${e.difficulty}</td>
-          <td>${e.is_home_ready ? '✓' : '<span class="muted">gym</span>'}</td>
-        </tr>`).join('')}
-      </tbody></table>
-      ${rows.length === 0 ? '<div class="empty">Nothing matches.</div>' : ''}`;
-    $('exTable').querySelectorAll('[data-ex]').forEach(tr =>
-      tr.onclick = () => openExercise(tr.dataset.ex));
-  };
-  $('q').addEventListener('input', draw);
-  draw();
+    <p class="lede">Every movement the app can teach — the name, the cues people read mid-set,
+      and the photo. Click a row to edit, or add one that is missing.</p>
+    <div class="sheet-bar">
+      <input type="search" id="eq" placeholder="Search name, muscle or pattern" value="${esc(exQuery)}" />
+      <button class="btn primary" id="newEx">New exercise</button>
+    </div>
+    <div id="exTable"></div>
+    <p class="rowcount" id="exCount"></p>`;
+  $('eq').addEventListener('input', e => { exQuery = e.target.value; drawExercises(); });
+  $('newEx').onclick = () => openExercise(null);
+  drawExercises();
+}
+
+function drawExercises() {
+  const q = exQuery.trim().toLowerCase();
+  const rows = state.exercises.filter(e => !q ||
+    (e.name || '').toLowerCase().includes(q) ||
+    (e.primary_muscles || []).join(' ').toLowerCase().includes(q) ||
+    (e.movement_pattern || '').toLowerCase().includes(q));
+
+  if (state.exercises.length === 0) {
+    $('exTable').innerHTML = `<div class="empty">
+      No exercises yet. Add the first one with <b>New exercise</b> — name it, write the steps
+      people read mid-set, and give it a photo.</div>`;
+    $('exCount').textContent = '';
+    return;
+  }
+
+  $('exTable').innerHTML = `
+    <div class="sheet-wrap"><table class="sheet">
+      <thead><tr>
+        <th style="width:52px">Photo</th><th>Name</th><th>Muscles</th><th>Pattern</th>
+        <th>Equipment</th><th class="num">Diff</th><th class="num">Rest</th>
+        <th>Home</th><th>Media</th><th></th>
+      </tr></thead>
+      <tbody>${rows.map(e => `<tr data-ex="${esc(e.id)}">
+        <td>${e.image_url
+              ? `<img class="thumb" src="${esc(e.image_url)}" alt="" loading="lazy">`
+              : `<div class="thumb ph">+</div>`}</td>
+        <td class="nm">${esc(e.name)}
+          <div class="tiny muted">${(e.how_to || []).length} steps · ${(e.tips || []).length} tips</div></td>
+        <td class="muted">${esc((e.primary_muscles || []).join(', '))}</td>
+        <td class="muted">${esc(e.movement_pattern || '')}</td>
+        <td class="muted">${esc((e.equipment || []).join(', '))}</td>
+        <td class="num">${e.difficulty ?? ''}</td>
+        <td class="num muted">${e.default_rest_sec ? e.default_rest_sec + 's' : ''}</td>
+        <td>${e.is_home_ready ? '✓' : '<span class="muted">gym</span>'}</td>
+        <td><div class="tagline">
+          ${e.image_url ? '<span class="tg">photo</span>' : ''}
+          ${e.video_url ? '<span class="tg">video</span>' : ''}
+        </div></td>
+        <td>${e.is_active === false ? '<span class="pill done">off</span>' : ''}</td>
+      </tr>`).join('')}</tbody>
+    </table></div>
+    ${rows.length === 0 ? '<div class="empty">Nothing matches.</div>' : ''}`;
+  $('exCount').textContent =
+    `${rows.length} of ${state.exercises.length} exercises · ${state.exercises.filter(e => !e.image_url).length} without a photo`;
+  $('exTable').querySelectorAll('[data-ex]').forEach(tr =>
+    tr.onclick = () => openExercise(tr.dataset.ex));
 }
 
 function viewWorkouts() {
@@ -801,6 +875,323 @@ function drawNotes() {
   });
 }
 
+// -- Shared: media upload + food lookup -----------------------
+// Images go to the public `assets` bucket; only admins may write there (RLS).
+// The public URL is stored on the row, so the app needs no signed-URL logic.
+
+async function uploadImage(file, folder, id) {
+  if (!file) return null;
+  if (file.size > 5 * 1024 * 1024) throw new Error('Image must be under 5MB.');
+  const ext = (file.name.split('.').pop() || 'jpg').toLowerCase().replace(/[^a-z0-9]/g, '');
+  // Cache-bust by stamping the name: same path would otherwise serve the old image.
+  const path = `${folder}/${id}-${Date.now()}.${ext}`;
+  const { error } = await sb.storage.from('assets')
+    .upload(path, file, { upsert: true, contentType: file.type });
+  if (error) throw new Error(error.message);
+  return sb.storage.from('assets').getPublicUrl(path).data.publicUrl;
+}
+
+// Ingredient autocomplete runs through the same search_foods RPC the app's food
+// logger uses, so what you match here is exactly what the app would find.
+async function foodSearch(q) {
+  const { data, error } = await sb.rpc('search_foods', { q, lim: 8, offset_n: 0 });
+  if (error) return [];
+  return (data ?? []).map(f => ({
+    id: f.id, name: f.name, brand: f.brand, barcode: f.barcode, serving: f.serving_desc,
+  }));
+}
+
+// -- Recipe catalog ------------------------------------------
+// The 528 recipes the meal plan is built from. Distinct from Imports, which is
+// the review queue for recipes users pulled off social.
+
+let catFilter = 'all';
+let catQuery = '';
+
+function viewCatalog() {
+  main.innerHTML = `
+    <h1>Recipes</h1>
+    <p class="lede">Every recipe the meal plan can serve. Click a row to edit it, add a photo,
+      or link ingredients to the food database so the barcode comes with them.</p>
+    <div class="sheet-bar">
+      <input type="search" id="cq" placeholder="Search name, cuisine or ingredient" value="${esc(catQuery)}" />
+      ${['all','no photo','inactive'].map(f =>
+        `<button class="chip ${f===catFilter?'on':''}" data-cf="${esc(f)}">${esc(f)}</button>`).join('')}
+      <button class="btn primary" id="newRecipe">New recipe</button>
+    </div>
+    <div id="catTable"></div>
+    <p class="rowcount" id="catCount"></p>`;
+
+  $('cq').addEventListener('input', e => { catQuery = e.target.value; drawCatalog(); });
+  main.querySelectorAll('[data-cf]').forEach(b =>
+    b.onclick = () => { catFilter = b.dataset.cf; viewCatalog(); });
+  $('newRecipe').onclick = () => openCatalogRecipe(null);
+  drawCatalog();
+}
+
+function drawCatalog() {
+  const q = catQuery.trim().toLowerCase();
+  const rows = state.catalog.filter(r => {
+    if (catFilter === 'no photo' && r.image_url) return false;
+    if (catFilter === 'inactive' && r.is_active !== false) return false;
+    if (!q) return true;
+    const ing = (Array.isArray(r.ingredients) ? r.ingredients : []).map(i => i.name).join(' ');
+    return `${r.name} ${r.cuisine ?? ''} ${ing}`.toLowerCase().includes(q);
+  });
+  $('catTable').innerHTML = `
+    <div class="sheet-wrap"><table class="sheet">
+      <thead><tr>
+        <th style="width:52px">Photo</th><th>Name</th><th>Cuisine</th><th>Meals</th>
+        <th class="num">Time</th><th class="num">Cal</th><th class="num">P</th>
+        <th class="num">C</th><th class="num">F</th><th>Tags</th><th></th>
+      </tr></thead>
+      <tbody>${rows.map(r => {
+        const mt = Array.isArray(r.meal_types) ? r.meal_types : [];
+        const dt = Array.isArray(r.dietary_tags) ? r.dietary_tags : [];
+        const ing = Array.isArray(r.ingredients) ? r.ingredients : [];
+        const withUpc = ing.filter(i => i.upc).length;
+        return `<tr data-cat="${esc(r.id)}">
+          <td>${r.image_url
+                ? `<img class="thumb" src="${esc(r.image_url)}" alt="" loading="lazy">`
+                : `<div class="thumb ph">+</div>`}</td>
+          <td class="nm">${esc(r.name)}
+            <div class="tiny muted">${ing.length} ingredients${withUpc ? ` · ${withUpc} with UPC` : ''}</div></td>
+          <td class="muted">${esc(r.cuisine ?? '')}</td>
+          <td class="muted">${esc(mt.join(', '))}</td>
+          <td class="num muted">${r.cook_time_minutes ? r.cook_time_minutes + 'm' : ''}</td>
+          <td class="num">${r.calories != null ? Math.round(r.calories) : ''}</td>
+          <td class="num muted">${r.protein != null ? Math.round(r.protein) : ''}</td>
+          <td class="num muted">${r.carbs != null ? Math.round(r.carbs) : ''}</td>
+          <td class="num muted">${r.fat != null ? Math.round(r.fat) : ''}</td>
+          <td><div class="tagline">${dt.map(t => `<span class="tg">${esc(t)}</span>`).join('')}</div></td>
+          <td>${r.is_active === false ? '<span class="pill done">off</span>' : ''}</td>
+        </tr>`;
+      }).join('')}</tbody>
+    </table></div>
+    ${rows.length === 0 ? '<div class="empty">Nothing matches.</div>' : ''}`;
+  $('catCount').textContent =
+    `${rows.length} of ${state.catalog.length} recipes · ${state.catalog.filter(r => !r.image_url).length} still need a photo`;
+  $('catTable').querySelectorAll('[data-cat]').forEach(tr =>
+    tr.onclick = () => openCatalogRecipe(tr.dataset.cat));
+}
+
+function slugify(name) {
+  return (name || '').toLowerCase().trim().replace(/[^a-z0-9]+/g, '_')
+    .replace(/^_+|_+$/g, '').slice(0, 60) || 'recipe';
+}
+
+function ingRowHtml(i, idx) {
+  return `<div class="ing-row" data-ing="${idx}">
+    <input class="i-amt"  value="${esc(i.amount ?? '')}" placeholder="1" />
+    <input class="i-unit" value="${esc(i.unit ?? '')}"   placeholder="cup" />
+    <div class="ing-name-wrap">
+      <input class="i-name" value="${esc(i.name ?? '')}" placeholder="Type an ingredient…" autocomplete="off" />
+      ${i.foodName ? `<div class="matched">✓ ${esc(i.foodName)}</div>` : ''}
+    </div>
+    <input class="i-upc" value="${esc(i.upc ?? '')}" placeholder="UPC" />
+    <button class="xbtn" data-del="${idx}" title="Remove">×</button>
+  </div>`;
+}
+
+function openCatalogRecipe(id) {
+  const isNew = !id;
+  const r = isNew
+    ? { id: '', name: '', description: '', cuisine: 'american', complexity: 'easy',
+        cook_time_minutes: 20, default_servings: 2, meal_types: [], dietary_tags: [],
+        ingredients: [], steps: [], calories: null, protein: null, carbs: null, fat: null,
+        image_url: null, is_active: true }
+    : state.catalog.find(x => x.id === id);
+  if (!r) return;
+
+  // Local working copy — nothing touches state until Save succeeds.
+  let ings = (Array.isArray(r.ingredients) ? r.ingredients : []).map(x => ({ ...x }));
+  let imageUrl = r.image_url ?? null;
+
+  openDrawer(`
+    <button class="btn sm" id="dClose">← Back</button>
+    <h2 style="margin-top:14px">${isNew ? 'New recipe' : esc(r.name)}</h2>
+    ${isNew ? '' : `<p class="tiny muted">id: ${esc(r.id)}</p>`}
+
+    <div class="imgbox">
+      <div class="prev" id="imgPrev">${imageUrl
+        ? `<img src="${esc(imageUrl)}" style="width:82px;height:82px;border-radius:12px;object-fit:cover">`
+        : 'no photo'}</div>
+      <div>
+        <input type="file" id="imgFile" accept="image/png,image/jpeg,image/webp" />
+        <p class="tiny muted" style="margin:6px 0 0">JPG, PNG or WebP, under 5MB.
+          Uploads when you press Save.</p>
+      </div>
+    </div>
+
+    <div class="field"><label>Name</label><input id="rName" value="${esc(r.name)}" /></div>
+    <div class="field"><label>Description</label>
+      <textarea id="rDesc" style="min-height:56px">${esc(r.description ?? '')}</textarea></div>
+
+    <div class="row">
+      <div class="field grow"><label>Cuisine</label><select id="rCuisine">
+        ${CUISINES.map(c => `<option ${c === r.cuisine ? 'selected' : ''}>${esc(c)}</option>`).join('')}
+      </select></div>
+      <div class="field grow"><label>Complexity</label><select id="rComplex">
+        ${['easy','complex'].map(c => `<option ${c === r.complexity ? 'selected' : ''}>${esc(c)}</option>`).join('')}
+      </select></div>
+    </div>
+    <div class="row">
+      <div class="field grow"><label>Cook time (min)</label>
+        <input id="rTime" type="number" min="0" value="${r.cook_time_minutes ?? ''}" /></div>
+      <div class="field grow"><label>Servings</label>
+        <input id="rServ" type="number" min="1" value="${r.default_servings ?? 2}" /></div>
+    </div>
+
+    <div class="field"><label>Meal types</label><div id="rMeals">
+      ${MEAL_TYPES.map(m => `<label class="tiny" style="margin-right:12px">
+        <input type="checkbox" value="${esc(m)}" ${(r.meal_types ?? []).includes(m) ? 'checked' : ''} /> ${esc(m)}
+      </label>`).join('')}</div></div>
+
+    <div class="field"><label>Dietary tags</label><div id="rTags">
+      ${DIET_TAGS.map(t => `<label class="tiny" style="margin-right:12px">
+        <input type="checkbox" value="${esc(t)}" ${(r.dietary_tags ?? []).includes(t) ? 'checked' : ''} /> ${esc(t)}
+      </label>`).join('')}</div></div>
+
+    <h3 style="font-size:14px;margin:22px 0 4px">Ingredients</h3>
+    <p class="tiny muted" style="margin:0 0 8px">Type an ingredient and pick the match to attach
+      its barcode. No match on file just means that food has no UPC yet — you can paste one.</p>
+    <div id="ingList">${ings.map(ingRowHtml).join('')}</div>
+    <button class="btn sm" id="addIng">+ Add ingredient</button>
+
+    <div class="field" style="margin-top:20px"><label>Instructions — one step per line</label>
+      <textarea id="rSteps" style="min-height:130px">${esc((Array.isArray(r.steps) ? r.steps : []).join('\n'))}</textarea></div>
+
+    <div class="row">
+      <div class="field grow"><label>Calories</label>
+        <input id="rCal" type="number" value="${r.calories ?? ''}" /></div>
+      <div class="field grow"><label>Protein g</label>
+        <input id="rP" type="number" value="${r.protein ?? ''}" /></div>
+    </div>
+    <div class="row">
+      <div class="field grow"><label>Carbs g</label>
+        <input id="rC" type="number" value="${r.carbs ?? ''}" /></div>
+      <div class="field grow"><label>Fat g</label>
+        <input id="rF" type="number" value="${r.fat ?? ''}" /></div>
+    </div>
+
+    <div class="field"><label class="tiny">
+      <input type="checkbox" id="rActive" ${r.is_active !== false ? 'checked' : ''} />
+      Active — unticking retires it from the meal plan without deleting it
+    </label></div>
+
+    <div class="problems" id="rProblems"></div>
+    <div class="actions">
+      <button class="btn primary" id="rSave">${isNew ? 'Create recipe' : 'Save'}</button>
+      <span class="tiny muted" id="rMsg"></span>
+    </div>
+  `);
+  $('dClose').onclick = closeDrawer;
+
+  // ── ingredient rows: render, autocomplete, add/remove ──
+  const readRows = () => {
+    [...$('ingList').querySelectorAll('.ing-row')].forEach((el, i) => {
+      if (!ings[i]) return;
+      ings[i].amount = el.querySelector('.i-amt').value.trim();
+      ings[i].unit   = el.querySelector('.i-unit').value.trim();
+      ings[i].name   = el.querySelector('.i-name').value.trim();
+      ings[i].upc    = el.querySelector('.i-upc').value.trim();
+    });
+  };
+  const renderIngs = () => { $('ingList').innerHTML = ings.map(ingRowHtml).join(''); wireIngs(); };
+
+  let acTimer = null;
+  function wireIngs() {
+    $('ingList').querySelectorAll('[data-del]').forEach(b => b.onclick = () => {
+      readRows(); ings.splice(Number(b.dataset.del), 1); renderIngs();
+    });
+    $('ingList').querySelectorAll('.ing-row').forEach((el, idx) => {
+      const input = el.querySelector('.i-name');
+      const wrap = el.querySelector('.ing-name-wrap');
+      const close = () => wrap.querySelector('.ac')?.remove();
+      input.addEventListener('blur', () => setTimeout(close, 160));
+      input.addEventListener('input', () => {
+        clearTimeout(acTimer);
+        const q = input.value.trim();
+        if (q.length < 2) { close(); return; }
+        acTimer = setTimeout(async () => {
+          const hits = await foodSearch(q);
+          close();
+          if (!hits.length) return;
+          const ac = document.createElement('div');
+          ac.className = 'ac';
+          ac.innerHTML = hits.map((h, i) => `<div data-h="${i}">
+            ${esc(h.name)}${h.brand ? ` <span class="u">${esc(h.brand)}</span>` : ''}
+            <span class="u">${h.barcode ? 'UPC ' + esc(h.barcode) : 'no UPC on file'}</span>
+          </div>`).join('');
+          wrap.appendChild(ac);
+          ac.querySelectorAll('[data-h]').forEach(d => d.onclick = () => {
+            const h = hits[Number(d.dataset.h)];
+            readRows();
+            ings[idx] = { ...ings[idx], foodId: h.id, foodName: h.name, upc: h.barcode ?? ings[idx].upc ?? '' };
+            renderIngs();
+          });
+        }, 260);
+      });
+    });
+  }
+  wireIngs();
+  $('addIng').onclick = () => { readRows(); ings.push({ amount: '', unit: '', name: '' }); renderIngs(); };
+
+  // ── save ──
+  $('rSave').onclick = async () => {
+    readRows();
+    const name = $('rName').value.trim();
+    const steps = $('rSteps').value.split('\n').map(x => x.trim()).filter(Boolean);
+    const cleanIngs = ings.filter(i => (i.name || '').trim());
+    const problems = [];
+    if (!name) problems.push('Name is required.');
+    if (cleanIngs.length === 0) problems.push('Add at least one ingredient.');
+    if (steps.length === 0) problems.push('Add at least one instruction step.');
+    $('rProblems').innerHTML = problems.map(x => `• ${esc(x)}`).join('<br>');
+    if (problems.length) return;
+
+    const btn = $('rSave'), msg = $('rMsg');
+    btn.disabled = true; msg.textContent = 'Saving…';
+
+    const rowId = isNew ? `${slugify(name)}_${Math.random().toString(36).slice(2, 6)}` : r.id;
+    try {
+      const file = $('imgFile').files?.[0];
+      if (file) { msg.textContent = 'Uploading photo…'; imageUrl = await uploadImage(file, 'recipes', rowId); }
+    } catch (e) {
+      btn.disabled = false; msg.textContent = `Photo failed: ${e.message}`; return;
+    }
+
+    const num = el => { const v = $(el).value.trim(); return v === '' ? null : Number(v); };
+    const payload = {
+      id: rowId,
+      name,
+      description: $('rDesc').value.trim() || null,
+      cuisine: $('rCuisine').value,
+      complexity: $('rComplex').value,
+      cook_time_minutes: num('rTime'),
+      default_servings: num('rServ') ?? 2,
+      meal_types: [...$('rMeals').querySelectorAll('input:checked')].map(i => i.value),
+      dietary_tags: [...$('rTags').querySelectorAll('input:checked')].map(i => i.value),
+      ingredients: cleanIngs,
+      steps,
+      calories: num('rCal'), protein: num('rP'), carbs: num('rC'), fat: num('rF'),
+      image_url: imageUrl,
+      is_active: $('rActive').checked,
+      updated_at: new Date().toISOString(),
+    };
+
+    const { error } = await sb.from('recipes').upsert(payload);
+    btn.disabled = false;
+    if (error) { msg.textContent = `Could not save: ${error.message}`; return; }
+
+    const i = state.catalog.findIndex(x => x.id === rowId);
+    if (i >= 0) state.catalog[i] = { ...state.catalog[i], ...payload };
+    else state.catalog.push(payload);
+    state.catalog.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+    closeDrawer(); viewCatalog();
+  };
+}
+
 // -- Split reviews -------------------------------------------
 // Users opt in from My splits: the row carries a snapshot of the split as
 // submitted plus their note. Feedback written here lands on that same row
@@ -1048,41 +1439,93 @@ function openRecipe(id) {
 }
 
 function openExercise(id) {
-  const e = state.exercises.find(x => x.id === id);
+  const isNew = !id;
+  const e = isNew
+    ? { id: '', name: '', primary_muscles: [], secondary_muscles: [], equipment: [],
+        movement_pattern: '', difficulty: 3, default_rest_sec: 90, how_to: [], tips: [],
+        safety: '', is_home_ready: false, is_active: true, image_url: null, video_url: null }
+    : state.exercises.find(x => x.id === id);
   if (!e) return;
+
+  let imageUrl = e.image_url ?? null;
+  const csv = a => (Array.isArray(a) ? a : []).join(', ');
+
   openDrawer(`
     <button class="btn sm" id="dClose">← Back</button>
-    <h2 style="margin-top:14px">${esc(e.name)}</h2>
-    <p class="small muted">${esc((e.primary_muscles||[]).join(', '))} — ${esc(e.movement_pattern)}</p>
+    <h2 style="margin-top:14px">${isNew ? 'New exercise' : esc(e.name)}</h2>
+    ${isNew ? '' : `<p class="tiny muted">id: ${esc(e.id)}</p>`}
+
+    <div class="imgbox">
+      <div class="prev" id="exPrev">${imageUrl
+        ? `<img src="${esc(imageUrl)}" style="width:82px;height:82px;border-radius:12px;object-fit:cover">`
+        : 'no photo'}</div>
+      <div>
+        <input type="file" id="exFile" accept="image/png,image/jpeg,image/webp" />
+        <p class="tiny muted" style="margin:6px 0 0">JPG, PNG or WebP, under 5MB.
+          Uploads when you press Save.</p>
+      </div>
+    </div>
+
+    <div class="field"><label>Video link
+        <span class="muted" style="font-weight:400">— stored only, nothing plays it yet</span></label>
+      <input id="exVideo" value="${esc(e.video_url || '')}" placeholder="https://…" /></div>
+
     <div class="field"><label>Name</label><input id="eName" value="${esc(e.name)}" /></div>
+
+    <div class="row">
+      <div class="field grow"><label>Primary muscles — comma separated</label>
+        <input id="eMus" value="${esc(csv(e.primary_muscles))}" placeholder="chest, triceps" /></div>
+      <div class="field grow"><label>Secondary muscles</label>
+        <input id="eMus2" value="${esc(csv(e.secondary_muscles))}" placeholder="shoulders" /></div>
+    </div>
+    <div class="row">
+      <div class="field grow"><label>Equipment — comma separated</label>
+        <input id="eEquip" value="${esc(csv(e.equipment))}" placeholder="barbell, bench" /></div>
+      <div class="field grow"><label>Movement pattern</label>
+        <input id="ePat" list="patterns" value="${esc(e.movement_pattern || '')}" placeholder="push" />
+        <datalist id="patterns">
+          ${['push','pull','squat','hinge','lunge','carry','core','isolation','cardio']
+            .map(x => `<option value="${x}">`).join('')}
+        </datalist></div>
+    </div>
+
     <div class="field"><label>Steps — one per line, 2 to 4</label>
-      <textarea id="eHow">${esc((e.how_to||[]).join('\n'))}</textarea></div>
+      <textarea id="eHow">${esc((e.how_to || []).join('\n'))}</textarea></div>
     <div class="field"><label>Tips — one per line, 1 to 3</label>
-      <textarea id="eTips">${esc((e.tips||[]).join('\n'))}</textarea></div>
+      <textarea id="eTips">${esc((e.tips || []).join('\n'))}</textarea></div>
     <div class="field"><label>Safety — optional, one line</label>
       <textarea id="eSafety" style="min-height:60px">${esc(e.safety || '')}</textarea></div>
+
     <div class="row">
       <div class="field grow"><label>Difficulty 1–5</label>
-        <input id="eDiff" type="number" min="1" max="5" value="${e.difficulty}" /></div>
+        <input id="eDiff" type="number" min="1" max="5" value="${e.difficulty ?? 3}" /></div>
       <div class="field grow"><label>Rest (seconds)</label>
-        <input id="eRest" type="number" value="${e.default_rest_sec}" /></div>
+        <input id="eRest" type="number" value="${e.default_rest_sec ?? 90}" /></div>
     </div>
-    <div class="locked">
-      <b>Fixed in the app build:</b> equipment (${esc((e.equipment||[]).join(', '))}), movement
-      pattern, and the home / joint-friendly swaps. Those decide whether Remix can produce a
-      workout someone is able to do and who this movement is safe to program for, so they change
-      in a release after the whole library is re-checked — not in a text box.
-    </div>
+
+    <div class="field"><label class="tiny">
+      <input type="checkbox" id="eHome" ${e.is_home_ready ? 'checked' : ''} />
+      Can be done at home — no gym machine needed
+    </label></div>
+    <div class="field"><label class="tiny">
+      <input type="checkbox" id="eActive" ${e.is_active !== false ? 'checked' : ''} />
+      Active — unticking retires it without deleting it
+    </label></div>
+
     <div class="problems" id="eProblems"></div>
-    <div class="actions"><button class="btn primary" id="eSave">Save</button></div>
+    <div class="actions">
+      <button class="btn primary" id="eSave">${isNew ? 'Create exercise' : 'Save'}</button>
+      <span class="tiny muted" id="eMsg"></span>
+    </div>
   `);
   $('dClose').onclick = closeDrawer;
 
   const validate = () => {
-    const how = $('eHow').value.split('\n').map(s=>s.trim()).filter(Boolean);
-    const tips = $('eTips').value.split('\n').map(s=>s.trim()).filter(Boolean);
+    const how = $('eHow').value.split('\n').map(x => x.trim()).filter(Boolean);
+    const tips = $('eTips').value.split('\n').map(x => x.trim()).filter(Boolean);
     const d = Number($('eDiff').value);
     const p = [];
+    if (!$('eName').value.trim()) p.push('Name is required.');
     if (how.length < 2 || how.length > 4) p.push('Steps must be 2 to 4 lines.');
     if (how.some(l => l.length > 130)) p.push('Each step must be under 130 characters.');
     if (tips.length < 1 || tips.length > 3) p.push('Tips must be 1 to 3 lines.');
@@ -1092,27 +1535,48 @@ function openExercise(id) {
     $('eSave').disabled = p.length > 0;
     return { how, tips, d, ok: p.length === 0 };
   };
-  ['eHow','eTips','eDiff'].forEach(i => $(i).addEventListener('input', validate));
+  ['eHow','eTips','eDiff','eName'].forEach(i => $(i).addEventListener('input', validate));
   validate();
 
   $('eSave').onclick = async () => {
     const v = validate();
     if (!v.ok) return;
-    $('eSave').disabled = true;
-    const { error } = await sb.from('exercises').update({
-      name: $('eName').value.trim() || e.name,
+    const btn = $('eSave'), msg = $('eMsg');
+    btn.disabled = true; msg.textContent = 'Saving…';
+
+    const name = $('eName').value.trim();
+    const rowId = isNew ? slugify(name) : e.id;
+    try {
+      const file = $('exFile').files?.[0];
+      if (file) { msg.textContent = 'Uploading photo…'; imageUrl = await uploadImage(file, 'exercises', rowId); }
+    } catch (err) {
+      btn.disabled = false; msg.textContent = `Photo failed: ${err.message}`; return;
+    }
+
+    const list = el => $(el).value.split(',').map(x => x.trim()).filter(Boolean);
+    const payload = {
+      id: rowId,
+      name,
+      primary_muscles: list('eMus'),
+      secondary_muscles: list('eMus2'),
+      equipment: list('eEquip'),
+      movement_pattern: $('ePat').value.trim() || null,
       how_to: v.how, tips: v.tips,
       safety: $('eSafety').value.trim() || null,
       difficulty: v.d,
-      default_rest_sec: Number($('eRest').value) || e.default_rest_sec,
-    }).eq('id', e.id);
-    if (error) {
-      // The database re-checks the integrity rules, so this is where a change
-      // that would break Remix or the composer gets refused.
-      $('eProblems').textContent = 'Rejected by the server: ' + error.message;
-      $('eSave').disabled = false;
-      return;
-    }
+      default_rest_sec: Number($('eRest').value) || 90,
+      is_home_ready: $('eHome').checked,
+      is_active: $('eActive').checked,
+      image_url: imageUrl,
+      video_url: $('exVideo').value.trim() || null,
+      updated_at: new Date().toISOString(),
+    };
+
+    // The database re-checks its own integrity rules, so a change that would
+    // break the library gets refused here rather than silently accepted.
+    const { error } = await sb.from('exercises').upsert(payload);
+    btn.disabled = false;
+    if (error) { $('eProblems').textContent = 'Rejected by the server: ' + error.message; return; }
     closeDrawer(); await loadAll();
   };
 }
