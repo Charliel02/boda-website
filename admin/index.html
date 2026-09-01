@@ -148,6 +148,8 @@
   .thumb.ph{display:flex;align-items:center;justify-content:center;font-size:15px;color:var(--muted)}
   .tagline{display:flex;gap:4px;flex-wrap:wrap}
   .tg{font-size:10px;padding:2px 7px;border-radius:999px;background:rgba(0,0,49,.06);color:var(--muted);white-space:nowrap}
+  table.sheet tbody tr.emptyrow:hover{background:transparent;cursor:default}
+  table.sheet td.emptycell{padding:38px 16px;text-align:center;color:var(--muted);font-size:13px}
   .sheet-bar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:12px}
   .sheet-bar input[type=search]{flex:1;min-width:200px}
   .rowcount{font-size:12px;color:var(--muted);margin:10px 2px 0}
@@ -458,52 +460,65 @@ function viewOverview() {
 }
 const stat = (n, label) => `<div class="stat"><b>${n}</b><span>${esc(label)}</span></div>`;
 
-let recipeFilter = 'pending';
+let recipeFilter = 'all';
+let importQuery = '';
+
+// Recipes users pulled off Instagram / TikTok / YouTube, waiting on review.
+// Same sheet as the other catalogs; the drawer is the existing review flow.
 function viewRecipes() {
-  const list = state.recipes.filter(r => recipeFilter === 'all' || r.status === recipeFilter);
   main.innerHTML = `
-    <h1>Recipes</h1>
-    <p class="lede">Imported from Instagram, TikTok and YouTube by your users. Nutrition is worked
-      out from the ingredients, never from what the creator claimed.</p>
-    <div class="toolbar">
-      ${['pending','approved','rejected','failed','all']
-        .map(f => `<button class="chip ${f===recipeFilter?'on':''}" data-f="${f}">${f}</button>`).join('')}
+    <h1>Imports</h1>
+    <p class="lede">Recipes your users imported from social. Nutrition is worked out from the
+      ingredients, never from what the creator claimed. Click a row to review it.</p>
+    <div class="sheet-bar">
+      <input type="search" id="iq" placeholder="Search title, author or platform" value="${esc(importQuery)}" />
+      ${['all','pending','approved','rejected','failed']
+        .map(f => `<button class="chip ${f===recipeFilter?'on':''}" data-f="${esc(f)}">${esc(f)}</button>`).join('')}
     </div>
-    ${list.length === 0 ? `<div class="empty">Nothing ${esc(recipeFilter)}.</div>` :
-      list.map(recipeCard).join('')}
-  `;
+    <div id="impTable"></div>
+    <p class="rowcount" id="impCount"></p>`;
+  $('iq').addEventListener('input', e => { importQuery = e.target.value; drawImports(); });
   main.querySelectorAll('[data-f]').forEach(b =>
     b.onclick = () => { recipeFilter = b.dataset.f; viewRecipes(); });
-  main.querySelectorAll('[data-recipe]').forEach(b =>
-    b.onclick = () => openRecipe(b.dataset.recipe));
+  drawImports();
 }
 
-function recipeCard(r) {
-  const ing = Array.isArray(r.ingredients) ? r.ingredients : [];
-  const matched = ing.filter(i => i.matchedFoodId).length;
-  return `
-  <div class="card">
-    <div class="row">
-      <div class="grow">
-        <div class="row" style="align-items:center;gap:8px">
-          <b>${esc(r.title || 'Untitled import')}</b>
-          <span class="pill ${esc(r.status)}">${esc(r.status)}</span>
-        </div>
-        <div class="small muted">${esc([r.source_platform, r.source_author].filter(Boolean).join(' · ') || 'unknown source')}</div>
-        ${r.status === 'failed'
-          ? `<div class="small" style="color:var(--bad);margin-top:6px">${esc(r.error_message)}</div>`
-          : `<div class="small" style="margin-top:8px">
-               <b>${r.calories ?? 0} cal</b> · ${Math.round(r.protein_grams ?? 0)}g P ·
-               ${Math.round(r.carbs_grams ?? 0)}g C · ${Math.round(r.fat_grams ?? 0)}g F
-               ${r.servings > 1 ? ' per serving' : ''}
-             </div>
-             <div class="tiny muted">${ing.length} ingredients (${matched} matched to the food
-               database) · ${(r.instructions||[]).length} steps
-               ${r.total_minutes ? ` · ${r.total_minutes} min` : ''}</div>`}
-      </div>
-      <button class="btn sm" data-recipe="${esc(r.id)}">Open</button>
-    </div>
-  </div>`;
+function drawImports() {
+  const q = importQuery.trim().toLowerCase();
+  const rows = state.recipes.filter(r => {
+    if (recipeFilter !== 'all' && r.status !== recipeFilter) return false;
+    if (!q) return true;
+    return `${r.title ?? ''} ${r.source_author ?? ''} ${r.source_platform ?? ''}`.toLowerCase().includes(q);
+  });
+  const fmt = x => x ? new Date(x).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) : '';
+  const rowHtml = rows.map(r => {
+    const ing = Array.isArray(r.ingredients) ? r.ingredients : [];
+    const matched = ing.filter(i => i.matchedFoodId).length;
+    return `<tr data-recipe="${esc(r.id)}">
+      <td class="nm">${esc(r.title || 'Untitled import')}
+        <div class="tiny muted">${ing.length} ingredients${ing.length ? ` · ${matched} matched` : ''}</div></td>
+      <td class="muted">${esc([r.source_platform, r.source_author].filter(Boolean).join(' · ') || 'unknown')}</td>
+      <td><span class="pill ${esc(r.status)}">${esc(r.status)}</span></td>
+      <td class="num">${r.calories != null ? Math.round(r.calories) : ''}</td>
+      <td class="num muted">${r.protein_grams != null ? Math.round(r.protein_grams) : ''}</td>
+      <td class="num muted">${r.carbs_grams != null ? Math.round(r.carbs_grams) : ''}</td>
+      <td class="num muted">${r.fat_grams != null ? Math.round(r.fat_grams) : ''}</td>
+      <td class="num muted">${r.total_minutes ? r.total_minutes + 'm' : ''}</td>
+      <td class="muted">${esc(fmt(r.created_at))}</td>
+    </tr>`;
+  });
+  $('impTable').innerHTML = sheetTable(
+    [{ label: 'Title' }, { label: 'Source' }, { label: 'Status' }, { label: 'Cal', cls: 'num' },
+     { label: 'P', cls: 'num' }, { label: 'C', cls: 'num' }, { label: 'F', cls: 'num' },
+     { label: 'Time', cls: 'num' }, { label: 'Added' }],
+    rowHtml,
+    state.recipes.length === 0
+      ? 'Nothing imported yet. These arrive when someone imports a recipe from Instagram, TikTok or YouTube in the app.'
+      : 'Nothing matches that filter.');
+  $('impCount').textContent = state.recipes.length === 0 ? ''
+    : `${rows.length} of ${state.recipes.length} imports · ${state.recipes.filter(r => r.status === 'pending').length} waiting on review`;
+  $('impTable').querySelectorAll('[data-recipe]').forEach(tr =>
+    tr.onclick = () => openRecipe(tr.dataset.recipe));
 }
 
 let exQuery = '';
@@ -531,22 +546,7 @@ function drawExercises() {
     (e.primary_muscles || []).join(' ').toLowerCase().includes(q) ||
     (e.movement_pattern || '').toLowerCase().includes(q));
 
-  if (state.exercises.length === 0) {
-    $('exTable').innerHTML = `<div class="empty">
-      No exercises yet. Add the first one with <b>New exercise</b> — name it, write the steps
-      people read mid-set, and give it a photo.</div>`;
-    $('exCount').textContent = '';
-    return;
-  }
-
-  $('exTable').innerHTML = `
-    <div class="sheet-wrap"><table class="sheet">
-      <thead><tr>
-        <th style="width:52px">Photo</th><th>Name</th><th>Muscles</th><th>Pattern</th>
-        <th>Equipment</th><th class="num">Diff</th><th class="num">Rest</th>
-        <th>Home</th><th>Media</th><th></th>
-      </tr></thead>
-      <tbody>${rows.map(e => `<tr data-ex="${esc(e.id)}">
+  const rowHtml = rows.map(e => `<tr data-ex="${esc(e.id)}">
         <td>${e.image_url
               ? `<img class="thumb" src="${esc(e.image_url)}" alt="" loading="lazy">`
               : `<div class="thumb ph">+</div>`}</td>
@@ -563,35 +563,83 @@ function drawExercises() {
           ${e.video_url ? '<span class="tg">video</span>' : ''}
         </div></td>
         <td>${e.is_active === false ? '<span class="pill done">off</span>' : ''}</td>
-      </tr>`).join('')}</tbody>
-    </table></div>
-    ${rows.length === 0 ? '<div class="empty">Nothing matches.</div>' : ''}`;
-  $('exCount').textContent =
-    `${rows.length} of ${state.exercises.length} exercises · ${state.exercises.filter(e => !e.image_url).length} without a photo`;
+      </tr>`);
+  $('exTable').innerHTML = sheetTable(
+    [{ label: 'Photo', w: '52px' }, { label: 'Name' }, { label: 'Muscles' }, { label: 'Pattern' },
+     { label: 'Equipment' }, { label: 'Diff', cls: 'num' }, { label: 'Rest', cls: 'num' },
+     { label: 'Home' }, { label: 'Media' }, { label: '' }],
+    rowHtml,
+    state.exercises.length === 0
+      ? 'No exercises yet. Add the first one with New exercise — name it, write the steps people read mid-set, and give it a photo.'
+      : 'Nothing matches that search.');
+  $('exCount').textContent = state.exercises.length === 0 ? ''
+    : `${rows.length} of ${state.exercises.length} exercises · ${state.exercises.filter(e => !e.image_url).length} without a photo`;
   $('exTable').querySelectorAll('[data-ex]').forEach(tr =>
     tr.onclick = () => openExercise(tr.dataset.ex));
 }
 
+let workoutQuery = '';
+
+// Training sessions. The generated library was rolled back on 2026-08-27
+// (structural validation passed content a coach would not write), so this table
+// is empty and the tab is read-only until that work is revived or replaced.
 function viewWorkouts() {
-  if (state.workouts.length === 0) {
-    main.innerHTML = `<h1>Workouts</h1>
-      <p class="lede">400 sessions across five levels.</p>
-      <div class="card"><b>Not published to the server yet.</b>
-      <p class="small muted" style="margin:6px 0 0">The sessions are built inside the app right
-      now. Publishing them so they can be edited here is the next piece of work.</p></div>`;
-    return;
-  }
-  const byLevel = {};
-  for (const w of state.workouts) (byLevel[w.level] ??= []).push(w);
-  main.innerHTML = `<h1>Workouts</h1>
-    <p class="lede">${state.workouts.length} sessions.</p>
-    ${Object.entries(byLevel).map(([lvl, ws]) => `
-      <div class="card"><b>${esc(lvl)}</b> — ${ws.length} sessions
-      <div class="small muted">${esc(ws.slice(0,6).map(w=>w.name).join(', '))}…</div></div>
-    `).join('')}`;
+  main.innerHTML = `
+    <h1>Workouts</h1>
+    <p class="lede">Full training sessions. Move currently builds its own from templates, so
+      nothing is published here yet — this is the shape they will land in.</p>
+    <div class="sheet-bar">
+      <input type="search" id="wq" placeholder="Search name, level or focus" value="${esc(workoutQuery)}" />
+    </div>
+    <div id="wkTable"></div>
+    <p class="rowcount" id="wkCount"></p>`;
+  $('wq').addEventListener('input', e => { workoutQuery = e.target.value; drawWorkouts(); });
+  drawWorkouts();
 }
 
+function drawWorkouts() {
+  const q = workoutQuery.trim().toLowerCase();
+  const rows = state.workouts.filter(w => !q ||
+    `${w.name ?? ''} ${w.level ?? ''} ${w.focus ?? ''} ${w.session_type ?? ''}`.toLowerCase().includes(q));
+  const rowHtml = rows.map(w => `<tr data-wk="${esc(w.id)}">
+    <td class="nm">${esc(w.name)}${w.variant != null ? `<div class="tiny muted">variant ${esc(w.variant)}</div>` : ''}</td>
+    <td class="muted">${esc(w.level ?? '')}</td>
+    <td class="muted">${esc(w.session_type ?? '')}</td>
+    <td class="muted">${esc(w.focus ?? '')}</td>
+    <td><div class="tagline">${(w.goal_tags ?? []).map(t => `<span class="tg">${esc(t)}</span>`).join('')}</div></td>
+    <td class="num muted">${w.est_minutes ? w.est_minutes + 'm' : ''}</td>
+    <td>${w.home_workout_id ? '✓' : '<span class="muted">gym</span>'}</td>
+    <td>${w.is_active === false ? '<span class="pill done">off</span>' : ''}</td>
+  </tr>`);
+  $('wkTable').innerHTML = sheetTable(
+    [{ label: 'Name' }, { label: 'Level' }, { label: 'Type' }, { label: 'Focus' },
+     { label: 'Goals' }, { label: 'Time', cls: 'num' }, { label: 'Home' }, { label: '' }],
+    rowHtml,
+    state.workouts.length === 0
+      ? 'No sessions published. The generated library was pulled in August because the content did not hold up; Move builds from templates in the app until it is revived or replaced.'
+      : 'Nothing matches that search.');
+  $('wkCount').textContent = state.workouts.length === 0 ? ''
+    : `${rows.length} of ${state.workouts.length} sessions`;
+  $('wkTable').querySelectorAll('[data-wk]').forEach(tr =>
+    tr.onclick = () => openWorkout(tr.dataset.wk));
+}
 
+// Read-only: nothing generates training from this table today, so offering an
+// editor would imply an effect it does not have.
+function openWorkout(id) {
+  const w = state.workouts.find(x => x.id === id);
+  if (!w) return;
+  openDrawer(`
+    <button class="btn sm" id="dClose">← Back</button>
+    <h2 style="margin-top:14px">${esc(w.name)}</h2>
+    <p class="small muted">${esc([w.level, w.session_type, w.focus].filter(Boolean).join(' · '))}</p>
+    <p class="tiny muted">id: ${esc(w.id)}</p>
+    ${w.coach_note ? `<div class="sub-note">${esc(w.coach_note)}</div>` : ''}
+    <div class="locked"><b>Read-only.</b> Nothing generates training from this table right now —
+      Move serves its own templates — so editing here would imply an effect it does not have.</div>
+  `);
+  $('dClose').onclick = closeDrawer;
+}
 
 // ── Usage ───────────────────────────────────────────────────
 // Everything here is an AGGREGATE. Knowing barcode scanning is popular does
@@ -970,6 +1018,20 @@ async function foodSearch(q) {
   }));
 }
 
+// One renderer for every catalog sheet, so Recipes, Exercises, Workouts and
+// Imports cannot drift apart. Headers always render — an empty table still has
+// to show its shape (Charlie 2026-09-01).
+function sheetTable(headers, rowHtml, emptyText) {
+  const head = headers.map(h =>
+    `<th${h.cls ? ` class="${h.cls}"` : ''}${h.w ? ` style="width:${h.w}"` : ''}>${esc(h.label ?? '')}</th>`
+  ).join('');
+  const body = rowHtml.length
+    ? rowHtml.join('')
+    : `<tr class="emptyrow"><td class="emptycell" colspan="${headers.length}">${esc(emptyText)}</td></tr>`;
+  return `<div class="sheet-wrap"><table class="sheet">
+    <thead><tr>${head}</tr></thead><tbody>${body}</tbody></table></div>`;
+}
+
 // -- Recipe catalog ------------------------------------------
 // The 528 recipes the meal plan is built from. Distinct from Imports, which is
 // the review queue for recipes users pulled off social.
@@ -1007,14 +1069,7 @@ function drawCatalog() {
     const ing = (Array.isArray(r.ingredients) ? r.ingredients : []).map(i => i.name).join(' ');
     return `${r.name} ${r.cuisine ?? ''} ${ing}`.toLowerCase().includes(q);
   });
-  $('catTable').innerHTML = `
-    <div class="sheet-wrap"><table class="sheet">
-      <thead><tr>
-        <th style="width:52px">Photo</th><th>Name</th><th>Cuisine</th><th>Meals</th>
-        <th class="num">Time</th><th class="num">Cal</th><th class="num">P</th>
-        <th class="num">C</th><th class="num">F</th><th>Tags</th><th></th>
-      </tr></thead>
-      <tbody>${rows.map(r => {
+  const rowHtml = rows.map(r => {
         const mt = Array.isArray(r.meal_types) ? r.meal_types : [];
         const dt = Array.isArray(r.dietary_tags) ? r.dietary_tags : [];
         const ing = Array.isArray(r.ingredients) ? r.ingredients : [];
@@ -1035,9 +1090,15 @@ function drawCatalog() {
           <td><div class="tagline">${dt.map(t => `<span class="tg">${esc(t)}</span>`).join('')}</div></td>
           <td>${r.is_active === false ? '<span class="pill done">off</span>' : ''}</td>
         </tr>`;
-      }).join('')}</tbody>
-    </table></div>
-    ${rows.length === 0 ? '<div class="empty">Nothing matches.</div>' : ''}`;
+      });
+  $('catTable').innerHTML = sheetTable(
+    [{ label: 'Photo', w: '52px' }, { label: 'Name' }, { label: 'Cuisine' }, { label: 'Meals' },
+     { label: 'Time', cls: 'num' }, { label: 'Cal', cls: 'num' }, { label: 'P', cls: 'num' },
+     { label: 'C', cls: 'num' }, { label: 'F', cls: 'num' }, { label: 'Tags' }, { label: '' }],
+    rowHtml,
+    state.catalog.length === 0
+      ? 'No recipes yet. Add the first one with New recipe.'
+      : 'Nothing matches that search.');
   $('catCount').textContent =
     `${rows.length} of ${state.catalog.length} recipes · ${state.catalog.filter(r => !r.image_url).length} still need a photo`;
   $('catTable').querySelectorAll('[data-cat]').forEach(tr =>
