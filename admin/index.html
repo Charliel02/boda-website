@@ -67,6 +67,18 @@
     text-align:left;padding:10px 12px;border-radius:9px;font-weight:600;font-size:14px}
   .nav button:hover{background:rgba(254,254,242,.08);color:var(--cream)}
   .nav button.on{background:rgba(254,254,242,.15);color:var(--cream)}
+  .navgroup{display:flex;flex-direction:column;gap:2px;margin-top:9px}
+  .grouphead{display:flex!important;align-items:center;gap:6px;background:transparent;border:0;
+    color:rgba(254,254,242,.45);text-align:left;padding:5px 12px;cursor:pointer;
+    font-size:10.5px;font-weight:700;letter-spacing:1.1px;text-transform:uppercase}
+  .grouphead:hover{background:transparent;color:rgba(254,254,242,.8)}
+  .grouphead .caret{font-size:8px;transition:transform .15s;opacity:.8}
+  .grouphead .gcount{margin-left:auto;background:var(--coral);color:#fff;border-radius:999px;
+    font-size:10px;font-weight:700;padding:1px 6px;letter-spacing:0}
+  .navgroup.closed .caret{transform:rotate(-90deg)}
+  .navgroup.closed .groupitems{display:none}
+  .groupitems{display:flex;flex-direction:column;gap:2px}
+  .groupitems button{padding-left:22px;font-size:13.5px}
   .nav .count{float:right;background:var(--coral);color:#fff;border-radius:999px;
     padding:1px 7px;font-size:11px;font-weight:700}
   .side-foot{margin-top:auto;padding:0 10px;font-size:12px;color:rgba(254,254,242,.5)}
@@ -199,7 +211,9 @@
   .legend i{width:11px;height:3px;border-radius:2px;display:inline-block}
   @media (max-width:820px){ .shell{grid-template-columns:1fr} .side{flex-direction:row;
     overflow:auto;align-items:center} .nav{flex-direction:row} .side .brand{display:none}
-    .side-foot{margin:0} }
+    .side-foot{margin:0}
+    .navgroup{display:contents} .grouphead{display:none!important}
+    .navgroup .groupitems, .navgroup.closed .groupitems{display:contents} }
 </style>
 </head>
 <body>
@@ -228,14 +242,46 @@
     <p class="brand">BO<span style="color:var(--coral)">DA</span></p>
     <nav class="nav" id="nav">
       <button data-view="overview" class="on">Overview</button>
-      <button data-view="catalog">Recipes</button>
-      <button data-view="exercises">Exercises</button>
-      <button data-view="recipes">Imports <span class="count" id="cRecipes" hidden></span></button>
-      <button data-view="workouts">Workouts</button>
-      <button data-view="dailynote">Daily note</button>
-      <button data-view="splitreviews">Split reviews <span class="count" id="cSubs" hidden></span></button>
-      <button data-view="usage">Usage</button>
-      <button data-view="admins">Admins</button>
+
+      <div class="navgroup" data-group="food">
+        <button class="grouphead" data-toggle="food">
+          <span class="caret">&#9660;</span> Food <span class="gcount" id="gFood" hidden></span>
+        </button>
+        <div class="groupitems">
+          <button data-view="catalog">Recipes</button>
+          <button data-view="recipes">Imports <span class="count" id="cRecipes" hidden></span></button>
+        </div>
+      </div>
+
+      <div class="navgroup" data-group="training">
+        <button class="grouphead" data-toggle="training">
+          <span class="caret">&#9660;</span> Training <span class="gcount" id="gTraining" hidden></span>
+        </button>
+        <div class="groupitems">
+          <button data-view="exercises">Exercises</button>
+          <button data-view="workouts">Workouts</button>
+          <button data-view="splitreviews">Split reviews <span class="count" id="cSubs" hidden></span></button>
+        </div>
+      </div>
+
+      <div class="navgroup" data-group="app">
+        <button class="grouphead" data-toggle="app">
+          <span class="caret">&#9660;</span> App
+        </button>
+        <div class="groupitems">
+          <button data-view="dailynote">Daily note</button>
+        </div>
+      </div>
+
+      <div class="navgroup" data-group="ops">
+        <button class="grouphead" data-toggle="ops">
+          <span class="caret">&#9660;</span> Operations
+        </button>
+        <div class="groupitems">
+          <button data-view="usage">Usage</button>
+          <button data-view="admins">Admins</button>
+        </div>
+      </div>
     </nav>
     <div class="side-foot">
       <div id="whoami"></div>
@@ -317,12 +363,34 @@ async function start() {
 
 // ── Nav ─────────────────────────────────────────────────────
 $('nav').addEventListener('click', e => {
+  // Group headers collapse their section; they carry no data-view.
+  const head = e.target.closest('button[data-toggle]');
+  if (head) { head.closest('.navgroup').classList.toggle('closed'); return; }
+
   const btn = e.target.closest('button[data-view]');
   if (!btn) return;
   state.view = btn.dataset.view;
-  [...$('nav').children].forEach(b => b.classList.toggle('on', b === btn));
+  // querySelectorAll, not children — the view buttons live inside groups now.
+  $('nav').querySelectorAll('button[data-view]').forEach(b => b.classList.toggle('on', b === btn));
   render();
 });
+
+// A collapsed group still has to show there is work waiting inside it, so each
+// header carries the sum of its children's pending badges.
+function groupBadges() {
+  const sum = ids => ids.reduce((n, id) => {
+    const el = $(id);
+    return n + (el && !el.hidden ? Number(el.textContent) || 0 : 0);
+  }, 0);
+  const set = (id, n) => {
+    const el = $(id);
+    if (!el) return;
+    el.hidden = n === 0;
+    el.textContent = n;
+  };
+  set('gFood', sum(['cRecipes']));
+  set('gTraining', sum(['cSubs']));
+}
 
 // ── Data ────────────────────────────────────────────────────
 async function loadAll() {
@@ -344,6 +412,7 @@ async function loadAll() {
   badge.hidden = pending === 0;
   badge.textContent = pending;
   subsBadge();
+  groupBadges();
   render();
 }
 
@@ -1224,6 +1293,7 @@ function subsBadge() {
   const n = state.subs.filter(x => x.status === 'pending').length;
   badge.hidden = n === 0;
   badge.textContent = n;
+  groupBadges();
 }
 
 function subSplitHtml(snap) {
