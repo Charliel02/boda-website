@@ -317,7 +317,36 @@ let state = { view: 'overview', recipes: [], catalog: [], exercises: [], workout
 // Vocabularies read off the live table (2026-09-01) rather than guessed, so the
 // editor can only produce values the app already understands.
 const MEAL_TYPES = ['breakfast', 'lunch', 'dinner', 'snack'];
-const DIET_TAGS  = ['vegan', 'vegetarian', 'pescatarian', 'gluten-free', 'dairy-free', 'nut-free'];
+const DIET_TAGS  = ['vegan', 'vegetarian', 'pescatarian', 'gluten-free', 'dairy-free', 'nut-free',
+                    'halal', 'kosher'];
+// Plain-English meaning of each tag, shown in the editor and as hover text on
+// the sheet, so whoever tags a recipe knows what they are promising.
+const DIET_INFO = {
+  'vegan':       'No animal products at all: no meat, fish, dairy, eggs or honey.',
+  'vegetarian':  'No meat or fish. Dairy and eggs are fine.',
+  'pescatarian': 'No meat or poultry. Fish and seafood are fine, as are dairy and eggs.',
+  'gluten-free': 'No wheat, barley or rye, including hidden sources like soy sauce, flour or regular oats.',
+  'dairy-free':  'No milk from animals, so no butter, cheese, cream, yogurt or whey.',
+  'nut-free':    'No tree nuts or peanuts, including nut oils, butters and milks.',
+  'halal':       'Allowed under Islamic dietary law. No pork and no alcohol (including cooking wine, '
+               + 'beer or mirin). Meat and poultry must be zabiha: slaughtered by a Muslim who says '
+               + 'God\'s name ("Bismillah, Allahu Akbar") at the moment of slaughter. The blessing '
+               + 'happens at slaughter, not over the finished dish, so the recipe should call for '
+               + 'halal-certified meat. Fish and seafood are generally fine.',
+  'kosher':      'Follows Jewish dietary law (kashrut). No pork, and no shellfish. Fish must have fins '
+               + 'and scales. Meat must come from a kosher animal slaughtered by a trained shochet and '
+               + 'carry a kosher certification. Meat and dairy are never mixed in the same dish, so '
+               + 'no cheeseburgers or chicken in a cream sauce.',
+};
+// Ingredients that break halal or kosher. A hit only asks before saving, it
+// never blocks: "turkey bacon" or "halal beef sausage" are legitimate.
+const DIET_CONFLICTS = {
+  'halal':  ['pork', 'bacon', 'ham', 'prosciutto', 'pancetta', 'chorizo', 'salami', 'lard',
+             'gelatin', 'wine', 'beer', 'rum', 'vodka', 'bourbon', 'brandy', 'sake', 'mirin'],
+  'kosher': ['pork', 'bacon', 'ham', 'prosciutto', 'pancetta', 'chorizo', 'lard', 'gelatin',
+             'shrimp', 'prawn', 'prawns', 'crab', 'lobster', 'clam', 'clams', 'mussel', 'mussels',
+             'oyster', 'oysters', 'scallop', 'scallops', 'squid', 'calamari', 'octopus'],
+};
 const CUISINES   = ['american', 'indian', 'italian', 'japanese', 'mediterranean', 'mexican',
                     'middle-eastern', 'thai'];
 
@@ -1102,7 +1131,8 @@ function drawCatalog() {
           <td class="num muted">${r.protein != null ? Math.round(r.protein) : ''}</td>
           <td class="num muted">${r.carbs != null ? Math.round(r.carbs) : ''}</td>
           <td class="num muted">${r.fat != null ? Math.round(r.fat) : ''}</td>
-          <td><div class="tagline">${dt.map(t => `<span class="tg">${esc(t)}</span>`).join('')}</div></td>
+          <td><div class="tagline">${dt.map(t =>
+            `<span class="tg" title="${esc(DIET_INFO[t] ?? '')}">${esc(t)}</span>`).join('')}</div></td>
           <td>${r.is_active === false ? '<span class="pill done">off</span>' : ''}</td>
         </tr>`;
       });
@@ -1193,9 +1223,13 @@ function openCatalogRecipe(id) {
       </label>`).join('')}</div></div>
 
     <div class="field"><label>Dietary tags</label><div id="rTags">
-      ${DIET_TAGS.map(t => `<label class="tiny" style="margin-right:12px">
+      ${DIET_TAGS.map(t => `<label class="tiny" style="margin-right:12px" title="${esc(DIET_INFO[t])}">
         <input type="checkbox" value="${esc(t)}" ${(r.dietary_tags ?? []).includes(t) ? 'checked' : ''} /> ${esc(t)}
-      </label>`).join('')}</div></div>
+      </label>`).join('')}</div>
+      <details class="tiny muted" style="margin-top:8px">
+        <summary style="cursor:pointer">What each tag means</summary>
+        ${DIET_TAGS.map(t => `<p style="margin:6px 0"><b>${esc(t)}</b> — ${esc(DIET_INFO[t])}</p>`).join('')}
+      </details></div>
 
     <h3 style="font-size:14px;margin:22px 0 4px">Ingredients</h3>
     <p class="tiny muted" style="margin:0 0 8px">Type an ingredient and pick the match to attach
@@ -1295,6 +1329,18 @@ function openCatalogRecipe(id) {
     $('rProblems').innerHTML = problems.map(x => `• ${esc(x)}`).join('<br>');
     if (problems.length) return;
 
+    const tags = [...$('rTags').querySelectorAll('input:checked')].map(i => i.value);
+    const clashes = tags.filter(t => DIET_CONFLICTS[t]).map(t => {
+      const hits = cleanIngs.map(i => i.name).filter(n =>
+        DIET_CONFLICTS[t].some(w => new RegExp(`\\b${w}\\b`, 'i').test(n)));
+      return hits.length ? `${t}: ${hits.join(', ')}` : null;
+    }).filter(Boolean);
+    if (clashes.length && !confirm(`These ingredients usually aren't allowed for the tags you ticked:
+
+${clashes.join('\n')}
+
+Save anyway? (Fine if it's e.g. turkey bacon or a certified product.)`)) return;
+
     const btn = $('rSave'), msg = $('rMsg');
     btn.disabled = true; msg.textContent = 'Saving…';
 
@@ -1316,7 +1362,7 @@ function openCatalogRecipe(id) {
       cook_time_minutes: num('rTime'),
       default_servings: num('rServ') ?? 2,
       meal_types: [...$('rMeals').querySelectorAll('input:checked')].map(i => i.value),
-      dietary_tags: [...$('rTags').querySelectorAll('input:checked')].map(i => i.value),
+      dietary_tags: tags,
       ingredients: cleanIngs,
       steps,
       calories: num('rCal'), protein: num('rP'), carbs: num('rC'), fat: num('rF'),
