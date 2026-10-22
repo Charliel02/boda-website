@@ -57,6 +57,48 @@ You asked for research tilted toward holistic approaches working. I gave that si
 
 ---
 
+## 2b. Fasting
+
+**Short answer: promising in mice, untested in men.** As of October 2026, no completed human trial shows that any form of fasting lowers PSA or slows prostate cancer. Several trials are under way.
+
+### Animal and lab studies
+| Study | Result | Grade |
+|---|---|---|
+| **40% calorie restriction**, mice with prostate tumors (Galet 2013) | Slowed tumor growth, partly by lowering IGF-1, a growth hormone. Added to the effect of an IGF-1-blocking drug. | ⚪ |
+| **Intermittent calorie restriction**, TRAMP mice (Bonorden 2009) | Delayed tumor detection and lengthened survival; worked better than continuous restriction | ⚪ |
+| **Twice-weekly 24-hour fasts, eating freely on other days**, 100 mice (Thomas 2010) | **No effect** on tumor growth or survival (p=0.37). The mice ate more on feeding days and their **IGF-1 went up**. | ⚪ **null** |
+| **Alternate-day fasting + enzalutamide**, several mouse models (Pili, *Cancer Research* 2025) | Fasting **lowered androgen receptor levels**, which **boosted the drug's anti-tumor effect** | ⚪ |
+
+**The lesson from the mice:** fasting appears to help **only when total calories actually go down**. Fasting followed by overeating did nothing and raised a growth hormone. The most promising use is **alongside hormone-blocking drugs**, not instead of them.
+
+### Human trials (none have reported cancer results yet)
+| Trial | Design | Status |
+|---|---|---|
+| **Fasting-mimicking diet + hormone therapy** (Freedland, Cedars-Sinai, NCT05832086) | 138 men with metastatic hormone-sensitive cancer; a 5-day low-calorie "fasting-mimicking" diet once a month for 6 months, alongside standard treatment | Recruiting |
+| **Fasting around docetaxel chemo** (Dorff/Longo, City of Hope) | 60 prostate patients; food restricted 3 days before and 1 day after each of 4 chemo cycles, to reduce side effects or boost the drug | No published results found |
+| **Time-restricted eating on ADT** (Pili, Buffalo, NCT06172283) | Feasibility study in men on hormone therapy | Recruiting; completion about 2027 |
+| **16-hour overnight fast, 5+ days/week** (IMPACT-ADT, City of Hope, NCT07202247) | 60 men on ADT; compared with GLP-1 drugs and a heart-healthy diet; targets weight, insulin and heart health | Recruiting |
+| **Daily fasting after prostatectomy** (Mayo, NCT04288336) | Aimed to delay PSA recurrence | **Withdrawn**: no patients enrolled |
+| **7-day water-only fast** in metastatic disease (NCT02710721) | Safety and feasibility only | — |
+
+The nearest completed human evidence is **CAPS2**: a 6-month very-low-carb diet that partly mimics fasting's metabolic effects. Men lost 12 kg, but the main PSA result was **null**, with only an adjusted signal (see the table above).
+
+### If you want to try it
+- **Lower-risk options:**
+  - A **12–16 hour overnight fast**, for example finishing dinner by 7 pm and eating again at 9–11 am.
+  - A **fasting-mimicking diet** of about 5 days a month, under supervision.
+  - Both help with weight and insulin, which have prostate evidence of their own.
+- **Make it lower total calories.** In the mice, fasting followed by catch-up eating did nothing.
+- **Protect muscle.** Keep protein adequate on eating days and do strength training. Hormone therapy already causes muscle and bone loss, and fasting can make that worse.
+- **Talk to your doctor first if:**
+  - you take **diabetes drugs** (insulin or sulfonylureas, because of the risk of low blood sugar) or **blood-pressure drugs**;
+  - you take **abiraterone with prednisone**, or **docetaxel**;
+  - you are underweight, losing weight unintentionally, or frail. In one study, unintended weight loss of more than 5% went with *higher* mortality.
+- **Avoid long water-only fasts (more than 3 days) on your own**, especially with advanced cancer.
+- **Keep PSA tests consistent.** Very long fasts can shift PSA readings, so test under similar conditions each time.
+
+---
+
 ## 3. Food by food
 
 ### Fruits
@@ -206,6 +248,8 @@ These come from general pharmacology, not from this research run. Confirm them w
 **Foods and compounds:** [Pomi-T RCT](https://pubmed.ncbi.nlm.nih.gov/24614693/) · [Nutraceutical trials review](https://pmc.ncbi.nlm.nih.gov/articles/PMC8631186) · [Sulforaphane phase II](https://pubmed.ncbi.nlm.nih.gov/25431127/) · [Pomegranate juice pilot](https://www.direct-ms.org/wp-content/uploads/2018/01/Pantuck-pomegranate-slows-PSADT-Curr-Uro-2006.pdf) · [ASCO Post polyphenols](https://ascopost.com/issues/january-25-2018/pomegranates-and-other-polyphenols-new-evidence-to-share-with-prostate-cancer-patients/) · [Lycopene review](https://www.ebm-journal.org/journals/experimental-biology-and-medicine/articles/10.1177/153537020222701003/pdf) · [White button mushroom](https://prostatecancerinfolink.net/2015/10/01/white-button-mushroom-powder-and-recurrent-prostate-cancer/) · [Modified citrus pectin](https://ascopost.com/news/august-2023/modified-citrus-pectin-treatment-for-nonmetastatic-biochemically-relapsed-prostate-cancer) · [Green tea / PIN](https://mdedge.com/content/green-tea-extract-may-prevent-pin-progression) · [Green tea 2017 null](https://www.pagepressjournals.org/index.php/aiua/article/view/8381) · [Curcumin RCT](https://pure.skku.edu/en/publications/a-randomized-double-blind-placebo-controlled-trial-to-evaluate-th/) · [Soy protein RCT](https://today.uic.edu/soy-does-not-reduce-recurrence-of-prostate-cancer/) · [Coffee meta-analysis](https://bmjopen.bmj.com/content/11/2/e038902)
 
 **Supplements:** [SELECT vitamin E](https://urotoday.com/recent-abstracts/urologic-oncology/prostate-cancer/46833-vitamin-e-and-the-risk-of-prostate-cancer-the-selenium-and-vitamin-e-cancer-prevention-trial-select-abstract.html) · [Selenium baseline](https://pubmed.ncbi.nlm.nih.gov/24563519/) · [Omega-3 SELECT (NCI)](https://cam.cancer.gov/news_and_events/prostate_cancer_omega3.htm) · [Vitamin D surveillance](https://pubmed.ncbi.nlm.nih.gov/22508710) · [PC-SPES (MSKCC)](https://www.mskcc.org/cancer-care/integrative-medicine/herbs/pc-spes) · [Dairy/calcium](https://pmc.ncbi.nlm.nih.gov/articles/PMC7482419) · [Antioxidants + radiation 2025](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC12279893/)
+
+**Fasting:** [Calorie restriction + IGF-1R (mice)](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC3742217/) · [Intermittent fasting null (mice)](https://pubmed.ncbi.nlm.nih.gov/20733612/) · [Intermittent CR, TRAMP mice](https://experts.umn.edu/en/publications/intermittent-calorie-restriction-delays-prostate-tumor-detection-/) · [Fasting + enzalutamide 2025](https://www.buffalo.edu/news/releases/2025/08/Prostate-cancer-intermittent-fasting.html) · [Fasting-mimicking diet trial](https://clinicaltrials.gov/study/NCT05832086) · [TRE on ADT trial](https://clinicaltrials.gov/study/NCT06172283) · [IMPACT-ADT](https://clinicaltrials.gov/study/NCT07202247) · [Mayo trial (withdrawn)](https://clinicaltrials.gov/study/NCT04288336) · [Docetaxel fasting trial](https://grandroundsinurology.com/?p=32648)
 
 **Lifestyle:** [Exercise & survival (Kenfield)](https://dash.harvard.edu/entities/publication/d2aafbae-2a53-46d3-bdac-dc048465ced5) · [INTERVAL-GAP4](https://opus.lib.uts.edu.au/bitstream/10453/173327/2/Intense%20exercise%20for%20survival%20among%20men%20with%20metastatic%20prostate%20cancer%3a%2012%20months%20feasibility%20results%20from%20the%20INTERVAL-GAP4%20trial.pdf) · [INTERVAL-GAP4 QoL 2026](https://indico.dkfz.de/event/1375/contributions/3879/) · [Weight change](https://pubmed.ncbi.nlm.nih.gov/24810654/) · [Sleep](https://urologytimes.com/view/sleep-duration-linked-pca-mortality-risk-younger-men) · [Ejaculation](https://pubmed.ncbi.nlm.nih.gov/27033442/) · [Yoga during radiation](https://penntoday.upenn.edu/news/penn-study-clinical-trial-shows-benefit-yoga-side-effects-prostate-cancer-treatment) · [ProtecT 15-year](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC10876753/)
 
