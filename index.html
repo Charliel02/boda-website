@@ -8,12 +8,17 @@
 <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png">
 <link rel="icon" type="image/png" sizes="512x512" href="/favicon-512.png">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
 <style>
   :root{
     --navy:#000031;
     --navy-deep:#000016;
     --coral:#FF6F63;
     --coral-dark:#993C1D;
+    --coral-ink:#B8362A;
+    --ink-muted:#5C5C74;
     --cream:#FEFEF2;
     --blue:#378ADD;
     --peach:#FFE6D9;
@@ -26,9 +31,9 @@
   .wrap{max-width:1100px;margin:0 auto;padding:0 24px}
 
   /* ---------- Reveal on scroll ---------- */
-  .reveal{opacity:0;transform:translateY(34px);transition:opacity .8s cubic-bezier(.2,.7,.2,1),transform .8s cubic-bezier(.2,.7,.2,1)}
+  .reveal{opacity:0;transform:translateY(16px);transition:opacity .5s cubic-bezier(.16,1,.3,1),transform .5s cubic-bezier(.16,1,.3,1)}
   .reveal.in{opacity:1;transform:none}
-  .d1{transition-delay:.08s}.d2{transition-delay:.16s}.d3{transition-delay:.24s}.d4{transition-delay:.32s}
+  .d1{transition-delay:.06s}.d2{transition-delay:.12s}.d3{transition-delay:.18s}.d4{transition-delay:.24s}
   @media(prefers-reduced-motion:reduce){.reveal{opacity:1;transform:none;transition:none}}
 
   /* ---------- Nav ---------- */
@@ -41,7 +46,7 @@
   .nav-links a{position:relative}
   .nav-links a::after{content:"";position:absolute;left:0;bottom:-4px;width:0;height:2px;background:var(--coral);transition:width .3s}
   .nav-links a:hover::after{width:100%}
-  .btn{display:inline-block;background:var(--coral);color:#fff;font-weight:600;padding:12px 26px;border-radius:999px;font-size:15px;transition:transform .2s cubic-bezier(.2,.7,.2,1),box-shadow .2s}
+  .btn{display:inline-block;background:var(--coral);color:var(--navy);font-weight:600;padding:12px 26px;border-radius:999px;font-size:15px;transition:transform .2s cubic-bezier(.2,.7,.2,1),box-shadow .2s}
   .btn:hover{transform:translateY(-3px) scale(1.02);box-shadow:0 12px 28px rgba(255,111,99,.4)}
   .btn:active{transform:translateY(-1px) scale(.99)}
   .btn.small{padding:8px 18px;font-size:13px}
@@ -86,7 +91,8 @@
   .phone.dark .tabbar{background:var(--navy-deep);border-top-color:#111142;color:#55557a}
   .tabbar>div{flex:1}
   .tabbar .active{color:var(--coral);font-weight:700}
-  .tabbar div span{display:block;font-size:14px}
+  .tabbar div span{display:block;height:16px;margin-bottom:2px}
+  .tabbar div span svg{width:16px;height:16px}
   .tabbar .fabc{width:46px;height:46px;border-radius:50%;background:var(--coral);color:#fff;display:flex;align-items:center;justify-content:center;font-size:9.5px;font-weight:800;margin:-26px auto 0;box-shadow:0 6px 14px rgba(255,111,99,.45)}
   .wcard{background:#fff;border-radius:16px;padding:12px 14px;box-shadow:0 2px 8px rgba(0,0,49,.06)}
   .slab{font-size:9px;font-weight:800;letter-spacing:1.2px;text-transform:uppercase;color:var(--coral-dark);margin:12px 2px 6px}
@@ -213,14 +219,17 @@
 
   /* ---------- Sections ---------- */
   section{padding:100px 0}
-  .kicker{color:var(--coral);font-weight:700;font-size:14px;text-transform:uppercase;letter-spacing:1.5px}
+  .kicker{color:var(--coral-ink);font-weight:700;font-size:14px;text-transform:uppercase;letter-spacing:1.5px}
+  h1,h2,h3{text-wrap:balance}
   h2{font-size:clamp(28px,4vw,42px);font-weight:800;letter-spacing:-.5px;margin-top:10px}
   .lede{margin-top:14px;font-size:17px;color:#555;max-width:640px}
 
   .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:24px;margin-top:48px}
   .feature{background:#fff;border-radius:24px;padding:34px 30px;box-shadow:0 4px 24px rgba(0,0,49,.06);transition:transform .35s cubic-bezier(.2,.7,.2,1),box-shadow .35s}
   .feature:hover{transform:translateY(-8px);box-shadow:0 20px 44px rgba(0,0,49,.12)}
-  .feature .icon{width:52px;height:52px;border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:24px;margin-bottom:18px}
+  .feature .icon{width:52px;height:52px;border-radius:16px;display:flex;align-items:center;justify-content:center;color:var(--navy);margin-bottom:18px}
+  .feature .icon svg{width:24px;height:24px}
+  .band .feature .icon{color:var(--cream)}
   .feature h3{font-size:20px;font-weight:700}
   .feature p{margin-top:10px;font-size:15px;color:#555}
   .feature ul{margin:14px 0 0 0;list-style:none}
@@ -238,6 +247,7 @@
 
   .band{background:var(--navy);color:var(--cream);position:relative;overflow:hidden}
   .band .lede{color:var(--muted)}
+  .band .kicker,header .kicker{color:var(--coral)}
   .band .feature{background:#0a0a45;box-shadow:none}
   .band .feature h3{color:var(--cream)}
   .band .feature p,.band .feature ul li{color:var(--muted)}
@@ -252,12 +262,12 @@
   .tier:hover{transform:translateY(-8px);box-shadow:0 24px 50px rgba(0,0,49,.14)}
   .tier.hot{border:3px solid var(--coral);transform:scale(1.02)}
   .tier.hot:hover{transform:scale(1.02) translateY(-8px)}
-  .tier .badge{position:absolute;top:-14px;left:50%;transform:translateX(-50%);background:var(--coral);color:#fff;font-size:12px;font-weight:700;padding:5px 16px;border-radius:99px;white-space:nowrap}
+  .tier .badge{position:absolute;top:-14px;left:50%;transform:translateX(-50%);background:var(--coral);color:var(--navy);font-size:12px;font-weight:700;padding:5px 16px;border-radius:99px;white-space:nowrap}
   .tier h3{font-size:22px;font-weight:800}
-  .tier .who{font-size:13.5px;color:#888;margin-top:4px}
+  .tier .who{font-size:13.5px;color:var(--ink-muted);margin-top:4px}
   .tier .price{margin-top:18px;font-size:38px;font-weight:800;letter-spacing:-1px}
-  .tier .price small{font-size:15px;font-weight:500;color:#888}
-  .tier .alt{font-size:13px;color:var(--coral-dark);font-weight:600;margin-top:2px}
+  .tier .price small{font-size:15px;font-weight:500;color:var(--ink-muted)}
+  .tier .alt{font-size:13px;color:var(--coral-ink);font-weight:600;margin-top:2px}
   .tier ul{list-style:none;margin:22px 0 28px;flex:1}
   .tier ul li{font-size:14.5px;padding:7px 0 7px 28px;position:relative;color:#333}
   .tier ul li::before{content:"✓";position:absolute;left:0;color:var(--coral);font-weight:700}
@@ -332,27 +342,27 @@
             <rect width="390" height="844" fill="#FEFEF2"/>
             <text x="28" y="34" font-size="14" font-weight="600" fill="#000031">9:41</text>
             <text x="362" y="34" font-size="13" fill="#000031" text-anchor="end">5G  100%</text>
-            <text x="24" y="86" font-size="13" fill="#8A8A99">Tuesday, June 24</text>
+            <text x="24" y="86" font-size="13" fill="#5C5C74">Wednesday, June 24</text>
             <text x="24" y="112" font-size="24" font-weight="600" fill="#000031">Good morning, Charlie</text>
             <circle cx="354" cy="92" r="20" fill="#FFE6D9"/>
             <text x="354" y="97" font-size="14" font-weight="600" fill="#993C1D" text-anchor="middle">C</text>
             <rect x="20" y="136" width="350" height="196" rx="20" fill="#FFFFFF" stroke="#ECEAE0"/>
             <circle cx="108" cy="234" r="58" fill="none" stroke="#F1EFE8" stroke-width="12"/>
-            <circle cx="108" cy="234" r="58" fill="none" stroke="#FF6F63" stroke-width="12" stroke-linecap="round" stroke-dasharray="240 365" transform="rotate(-90 108 234)"/>
-            <text x="108" y="230" font-size="28" font-weight="600" fill="#000031" text-anchor="middle">1,420</text>
-            <text x="108" y="250" font-size="12" fill="#8A8A99" text-anchor="middle">of 2,100 kcal</text>
-            <text x="196" y="190" font-size="13" fill="#8A8A99">Protein</text>
-            <text x="350" y="190" font-size="13" font-weight="600" fill="#000031" text-anchor="end">96 / 145 g</text>
+            <circle cx="108" cy="234" r="58" fill="none" stroke="#FF6F63" stroke-width="12" stroke-linecap="round" stroke-dasharray="217 365" transform="rotate(-90 108 234)"/>
+            <text x="108" y="230" font-size="28" font-weight="600" fill="#000031" text-anchor="middle">1,850</text>
+            <text x="108" y="250" font-size="12" fill="#5C5C74" text-anchor="middle">of 3,100 kcal</text>
+            <text x="196" y="190" font-size="13" fill="#5C5C74">Protein</text>
+            <text x="350" y="190" font-size="13" font-weight="600" fill="#000031" text-anchor="end">128 / 190 g</text>
             <rect x="196" y="198" width="154" height="7" rx="3.5" fill="#F1EFE8"/>
-            <rect x="196" y="198" width="102" height="7" rx="3.5" fill="#000031"/>
-            <text x="196" y="232" font-size="13" fill="#8A8A99">Carbs</text>
-            <text x="350" y="232" font-size="13" font-weight="600" fill="#000031" text-anchor="end">150 / 220 g</text>
+            <rect x="196" y="198" width="104" height="7" rx="3.5" fill="#000031"/>
+            <text x="196" y="232" font-size="13" fill="#5C5C74">Carbs</text>
+            <text x="350" y="232" font-size="13" font-weight="600" fill="#000031" text-anchor="end">150 / 300 g</text>
             <rect x="196" y="240" width="154" height="7" rx="3.5" fill="#F1EFE8"/>
-            <rect x="196" y="240" width="105" height="7" rx="3.5" fill="#378ADD"/>
-            <text x="196" y="274" font-size="13" fill="#8A8A99">Fat</text>
-            <text x="350" y="274" font-size="13" font-weight="600" fill="#000031" text-anchor="end">38 / 60 g</text>
+            <rect x="196" y="240" width="77" height="7" rx="3.5" fill="#378ADD"/>
+            <text x="196" y="274" font-size="13" fill="#5C5C74">Fat</text>
+            <text x="350" y="274" font-size="13" font-weight="600" fill="#000031" text-anchor="end">40 / 90 g</text>
             <rect x="196" y="282" width="154" height="7" rx="3.5" fill="#F1EFE8"/>
-            <rect x="196" y="282" width="98" height="7" rx="3.5" fill="#FF6F63"/>
+            <rect x="196" y="282" width="68" height="7" rx="3.5" fill="#FF6F63"/>
             <text x="196" y="316" font-size="12" fill="#1D9E75" font-weight="600">On track for today</text>
             <text x="24" y="368" font-size="16" font-weight="600" fill="#000031">Quick add</text>
             <rect x="20" y="382" width="110" height="84" rx="16" fill="#FFFFFF" stroke="#ECEAE0"/>
@@ -367,7 +377,7 @@
             <text x="315" y="452" font-size="13" fill="#000031" text-anchor="middle">Ask coach</text>
             <rect x="20" y="486" width="350" height="76" rx="18" fill="#FFFFFF" stroke="#ECEAE0"/>
             <text x="40" y="518" font-size="15" font-weight="600" fill="#000031">Water</text>
-            <text x="40" y="540" font-size="13" fill="#8A8A99">5 of 8 glasses</text>
+            <text x="40" y="540" font-size="13" fill="#5C5C74">5 of 8 glasses</text>
             <rect x="190" y="514" width="160" height="10" rx="5" fill="#EAF3FB"/>
             <rect x="190" y="514" width="100" height="10" rx="5" fill="#4A9FE8"/>
             <text x="350" y="544" font-size="12" fill="#4A9FE8" text-anchor="end" font-weight="600">+ glass</text>
@@ -376,19 +386,19 @@
             <text x="58" y="633" font-size="15" font-weight="600" fill="#993C1D" text-anchor="middle">S</text>
             <text x="92" y="618" font-size="14" font-weight="600" fill="#000031">Sarah, your dietitian</text>
             <text x="92" y="640" font-size="12.5" fill="#993C1D">"Great protein day - keep it up!"</text>
-            <text x="92" y="660" font-size="12.5" fill="#8A8A99">Tap to message</text>
+            <text x="92" y="660" font-size="12.5" fill="#5C5C74">Tap to message</text>
             <rect x="0" y="772" width="390" height="72" fill="#FFFFFF"/>
             <line x1="0" y1="772" x2="390" y2="772" stroke="#ECEAE0"/>
-            <text x="55" y="810" font-size="22" fill="#000031" text-anchor="middle">&#8962;</text>
+            <g transform="translate(45,796) scale(0.8333)" fill="none" stroke="#000031" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></g>
             <text x="55" y="830" font-size="10" fill="#000031" text-anchor="middle">Home</text>
-            <text x="140" y="810" font-size="20" fill="#B5B5BF" text-anchor="middle">&#9645;</text>
-            <text x="140" y="830" font-size="10" fill="#B5B5BF" text-anchor="middle">Journal</text>
+            <g transform="translate(130,796) scale(0.8333)" fill="none" stroke="#8A8A99" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h6a3 3 0 0 1 3 3v13a2 2 0 0 0-2-2H4z"/><path d="M20 4h-6a3 3 0 0 0-3 3v13a2 2 0 0 1 2-2h7z"/></g>
+            <text x="140" y="830" font-size="10" fill="#8A8A99" text-anchor="middle">Journal</text>
             <circle cx="195" cy="800" r="24" fill="#FF6F63"/>
             <text x="195" y="804" font-size="11" fill="#FEFEF2" text-anchor="middle">Coach</text>
-            <text x="250" y="810" font-size="20" fill="#B5B5BF" text-anchor="middle">&#9638;</text>
-            <text x="250" y="830" font-size="10" fill="#B5B5BF" text-anchor="middle">Plan</text>
-            <text x="335" y="810" font-size="20" fill="#B5B5BF" text-anchor="middle">&#9825;</text>
-            <text x="335" y="830" font-size="10" fill="#B5B5BF" text-anchor="middle">Progress</text>
+            <g transform="translate(240,796) scale(0.8333)" fill="none" stroke="#8A8A99" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3v18M5 3v5a3 3 0 0 0 6 0V3"/><path d="M17 3c-2.5 2.5-2.5 8.5 0 11v7"/></g>
+            <text x="250" y="830" font-size="10" fill="#8A8A99" text-anchor="middle">Menu</text>
+            <g transform="translate(325,796) scale(0.8333)" fill="none" stroke="#8A8A99" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></g>
+            <text x="335" y="830" font-size="10" fill="#8A8A99" text-anchor="middle">Move</text>
           </svg>
         </div>
       </div>
@@ -404,7 +414,7 @@
     <p class="lede reveal d2">BODA is built around five simple spaces — Home, Journal, Coach, Menu, and Move — that work together so healthy eating stops being a second job.</p>
     <div class="grid">
       <div class="feature reveal">
-        <div class="icon bg-coral">📓</div>
+        <div class="icon bg-coral"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 4h6a3 3 0 0 1 3 3v13a2 2 0 0 0-2-2H4z"/><path d="M20 4h-6a3 3 0 0 0-3 3v13a2 2 0 0 1 2-2h7z"/></svg></div>
         <h3>Journal — logging that takes seconds</h3>
         <p>Track what you eat without the chore.</p>
         <ul>
@@ -415,7 +425,7 @@
         </ul>
       </div>
       <div class="feature reveal d1">
-        <div class="icon bg-blue">🏠</div>
+        <div class="icon bg-blue"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg></div>
         <h3>Home — your health at a glance</h3>
         <p>One dashboard that tells you how today is going.</p>
         <ul>
@@ -426,7 +436,7 @@
         </ul>
       </div>
       <div class="feature reveal d2">
-        <div class="icon bg-navy">🏃</div>
+        <div class="icon bg-navy"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg></div>
         <h3>Move — workouts that adapt to you</h3>
         <p>Training plans tuned to your level, age, and mobility.</p>
         <ul>
@@ -529,11 +539,11 @@
               </div>
             </div>
             <div class="tabbar">
-              <div><span>🏠</span>Home</div>
-              <div class="active"><span>📓</span>Journal</div>
+              <div><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg></span>Home</div>
+              <div class="active"><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 4h6a3 3 0 0 1 3 3v13a2 2 0 0 0-2-2H4z"/><path d="M20 4h-6a3 3 0 0 0-3 3v13a2 2 0 0 1 2-2h7z"/></svg></span>Journal</div>
               <div><div class="fabc">Coach</div></div>
-              <div><span>🍽️</span>Menu</div>
-              <div><span>🏃</span>Move</div>
+              <div><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 3v18M5 3v5a3 3 0 0 0 6 0V3"/><path d="M17 3c-2.5 2.5-2.5 8.5 0 11v7"/></svg></span>Menu</div>
+              <div><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg></span>Move</div>
             </div>
           </div>
         </div>
@@ -558,11 +568,11 @@
               <div class="chat-input"><span>Ask me anything…</span><span>🎤 📷</span></div>
             </div>
             <div class="tabbar">
-              <div><span>🏠</span>Home</div>
-              <div><span>📓</span>Journal</div>
+              <div><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg></span>Home</div>
+              <div><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 4h6a3 3 0 0 1 3 3v13a2 2 0 0 0-2-2H4z"/><path d="M20 4h-6a3 3 0 0 0-3 3v13a2 2 0 0 1 2-2h7z"/></svg></span>Journal</div>
               <div><div class="fabc" style="box-shadow:0 0 0 4px var(--peach)">Coach</div></div>
-              <div><span>🍽️</span>Menu</div>
-              <div><span>🏃</span>Move</div>
+              <div><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 3v18M5 3v5a3 3 0 0 0 6 0V3"/><path d="M17 3c-2.5 2.5-2.5 8.5 0 11v7"/></svg></span>Menu</div>
+              <div><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg></span>Move</div>
             </div>
           </div>
         </div>
@@ -612,11 +622,11 @@
               <div class="askchef"><div class="r">R</div>Ask Chef Remy to adjust the week…</div>
             </div>
             <div class="tabbar">
-              <div><span>🏠</span>Home</div>
-              <div><span>📓</span>Journal</div>
+              <div><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg></span>Home</div>
+              <div><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 4h6a3 3 0 0 1 3 3v13a2 2 0 0 0-2-2H4z"/><path d="M20 4h-6a3 3 0 0 0-3 3v13a2 2 0 0 1 2-2h7z"/></svg></span>Journal</div>
               <div><div class="fabc">Coach</div></div>
-              <div class="active"><span>🍽️</span>Menu</div>
-              <div><span>🏃</span>Move</div>
+              <div class="active"><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 3v18M5 3v5a3 3 0 0 0 6 0V3"/><path d="M17 3c-2.5 2.5-2.5 8.5 0 11v7"/></svg></span>Menu</div>
+              <div><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg></span>Move</div>
             </div>
           </div>
         </div>
@@ -647,11 +657,11 @@
               <div class="navybtn" style="background:var(--blue)">Send to Kroger cart →</div>
             </div>
             <div class="tabbar">
-              <div><span>🏠</span>Home</div>
-              <div><span>📓</span>Journal</div>
+              <div><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg></span>Home</div>
+              <div><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 4h6a3 3 0 0 1 3 3v13a2 2 0 0 0-2-2H4z"/><path d="M20 4h-6a3 3 0 0 0-3 3v13a2 2 0 0 1 2-2h7z"/></svg></span>Journal</div>
               <div><div class="fabc">Coach</div></div>
-              <div class="active"><span>🍽️</span>Menu</div>
-              <div><span>🏃</span>Move</div>
+              <div class="active"><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 3v18M5 3v5a3 3 0 0 0 6 0V3"/><path d="M17 3c-2.5 2.5-2.5 8.5 0 11v7"/></svg></span>Menu</div>
+              <div><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg></span>Move</div>
             </div>
           </div>
         </div>
@@ -671,23 +681,23 @@
     </div>
     <div class="grid">
       <div class="feature reveal">
-        <div class="icon" style="background:rgba(255,111,99,.18)">🍽️</div>
+        <div class="icon" style="background:rgba(255,111,99,.18)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 3v18M5 3v5a3 3 0 0 0 6 0V3"/><path d="M17 3c-2.5 2.5-2.5 8.5 0 11v7"/></svg></div>
         <h3>Weekly meal plans</h3>
         <p>A full week of RD-vetted meals matched to your goals, allergies, calorie target, and grocery budget — with batch-prep sessions so you cook twice, not fourteen times.</p>
       </div>
       <div class="feature reveal d1">
-        <div class="icon" style="background:rgba(55,138,221,.2)">🛒</div>
+        <div class="icon" style="background:rgba(55,138,221,.2)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.7 13.4a2 2 0 0 0 2 1.6h9.7a2 2 0 0 0 2-1.6L23 6H6"/></svg></div>
         <h3>Groceries, ordered in-app</h3>
         <p>Your plan becomes a shopping list automatically — organized by aisle and scaled to your household. Then order it without leaving the app: one tap sends everything to your Kroger cart.</p>
       </div>
       <div class="feature reveal d2">
-        <div class="icon" style="background:rgba(254,254,242,.12)">👨‍🍳</div>
+        <div class="icon" style="background:rgba(254,254,242,.12)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 13.5A4.5 4.5 0 0 1 8 5a5 5 0 0 1 8 0 4.5 4.5 0 0 1 2 8.5V20H6z"/><path d="M6 17h12"/></svg></div>
         <h3>Your chef, your rules</h3>
         <p>Don't like a meal? Ask Chef Remy to adjust the week. Swap dishes, tune preferences, regenerate — the plan adapts to you.</p>
       </div>
       <div class="feature reveal d3" style="position:relative">
         <span style="position:absolute;top:18px;right:18px;background:rgba(255,111,99,.18);color:var(--coral);font-size:11px;font-weight:700;padding:4px 12px;border-radius:99px;letter-spacing:.5px">COMING SOON</span>
-        <div class="icon" style="background:rgba(255,111,99,.18)">📲</div>
+        <div class="icon" style="background:rgba(255,111,99,.18)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 2 11 13"/><path d="M22 2 15 22l-4-9-9-4z"/></svg></div>
         <h3>Saw it on social? Send it to BODA.</h3>
         <p>Found a recipe on TikTok, Instagram, or YouTube? Just share the link to BODA — it pulls the recipe, works out the macros, and drops it into your meals.</p>
       </div>
@@ -728,11 +738,11 @@
           </div>
         </div>
         <div class="tabbar">
-          <div><span>🏠</span>Home</div>
-          <div><span>📓</span>Journal</div>
+          <div><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg></span>Home</div>
+          <div><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 4h6a3 3 0 0 1 3 3v13a2 2 0 0 0-2-2H4z"/><path d="M20 4h-6a3 3 0 0 0-3 3v13a2 2 0 0 1 2-2h7z"/></svg></span>Journal</div>
           <div><div class="fabc">Coach</div></div>
-          <div><span>🍽️</span>Menu</div>
-          <div class="active"><span>🏃</span>Move</div>
+          <div><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 3v18M5 3v5a3 3 0 0 0 6 0V3"/><path d="M17 3c-2.5 2.5-2.5 8.5 0 11v7"/></svg></span>Menu</div>
+          <div class="active"><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg></span>Move</div>
         </div>
       </div>
 
@@ -805,7 +815,7 @@
         <a class="btn" href="mailto:info@bodanutrition.com?subject=BODA%2B%20founding%20member">Join the beta first</a>
       </div>
       <div class="tier reveal d2" style="opacity:.92">
-        <div class="badge" style="background:var(--navy)">Coming soon</div>
+        <div class="badge" style="background:var(--navy);color:var(--cream)">Coming soon</div>
         <h3>Coach</h3>
         <div class="who">Add a real registered dietitian</div>
         <div class="price">from $149<small>/mo</small></div>
