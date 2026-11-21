@@ -252,6 +252,7 @@
         <div class="groupitems">
           <button data-view="catalog">Recipes</button>
           <button data-view="recipes">Imports <span class="count" id="cRecipes" hidden></span></button>
+          <button data-view="menu">Menu</button>
         </div>
       </div>
 
@@ -298,6 +299,7 @@
 
 <script type="module">
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { createMenu } from './menu.js';
 
 // Public anon key — the same one inside the mobile app. Safe here: it grants
 // nothing on its own, and row-level security decides what the signed-in user
@@ -438,7 +440,7 @@ function render() {
   ({ overview: viewOverview, recipes: viewRecipes, exercises: viewExercises,
      workouts: viewWorkouts, usage: viewUsage, admins: viewAdmins,
      dailynote: viewDailyNote, splitreviews: viewSplitReviews,
-     catalog: viewCatalog })[state.view]();
+     catalog: viewCatalog, menu: menu.view })[state.view]();
 }
 
 function viewOverview() {
@@ -1532,6 +1534,9 @@ function closeDrawer() {
   $('drawerBg').style.display = 'none';
 }
 $('drawerBg').onclick = closeDrawer;
+
+// The Menu view (recipes, ready-made weeks and foods for the week planner) lives in menu.js.
+const menu = createMenu({ sb, $, esc, main, sheetTable, openDrawer, closeDrawer, slugify, foodSearch });
 
 function openRecipe(id) {
   const r = state.recipes.find(x => x.id === id);
