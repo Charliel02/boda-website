@@ -3694,7 +3694,7 @@ function rebuildCatalog() {
 rebuildCatalog();
 
 // features/menu/next/catalog/remote.ts
-var MADE_BY = {};
+var MADE_BY = { recipe: {}, week: {} };
 var BUNDLED = {
   recipes: [...CATALOG],
   known: [...KNOWN_RECIPES],
@@ -3846,6 +3846,8 @@ function restoreBundled() {
   for (const k of Object.keys(BUNDLED.presentation)) PRESENTATION[k] = BUNDLED.presentation[k];
   reset2(SHELVES, BUNDLED_SHELVES.map((x) => ({ ...x, weeks: [...x.weeks] })));
   reset2(FAMILY_WEEKS, [...BUNDLED_FAMILY_WEEKS]);
+  MADE_BY.recipe = {};
+  MADE_BY.week = {};
   rebuildCatalog();
 }
 function applyCatalog(snap, opts = {}) {
@@ -3891,16 +3893,16 @@ function applyCatalog(snap, opts = {}) {
     for (const r2 of recipes) {
       known.set(r2.id, toRecipe(r2));
       PRESENTATION[r2.id] = toPresentation(r2);
-      if (text(r2.made_by)) MADE_BY[r2.id] = r2.made_by.trim();
-      else delete MADE_BY[r2.id];
+      if (text(r2.made_by)) MADE_BY.recipe[r2.id] = r2.made_by.trim();
+      else delete MADE_BY.recipe[r2.id];
     }
     reset2(CATALOG, offered.map((r2) => known.get(r2.id)));
     reset2(KNOWN_RECIPES, [...known.values()]);
     const knownWeeks = new Map(KNOWN_WEEKS.map((w) => [w.id, w]));
     for (const w of weeks) {
       knownWeeks.set(w.id, toWeek(w));
-      if (text(w.made_by)) MADE_BY[w.id] = w.made_by.trim();
-      else delete MADE_BY[w.id];
+      if (text(w.made_by)) MADE_BY.week[w.id] = w.made_by.trim();
+      else delete MADE_BY.week[w.id];
     }
     reset2(WEEKS, offeredWeeks.map((w) => knownWeeks.get(w.id)));
     reset2(KNOWN_WEEKS, [...knownWeeks.values()]);
