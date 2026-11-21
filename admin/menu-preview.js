@@ -3107,7 +3107,7 @@ var mealOf = (r2) => {
     protein: Math.round(n.protein),
     minutes: r2.cook_time_minutes,
     perServing: servingCost(asWritten(r2)),
-    ...only ? { kind: only, pack: ADD_ON_DAYS, packLabel: `${ADD_ON_DAYS} days each` } : {}
+    ...only ? { kind: only, pack: ADD_ON_DAYS, packLabel: `${ADD_ON_DAYS} days` } : {}
   };
   return meal;
 };
